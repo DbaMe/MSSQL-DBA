@@ -1,0 +1,4339 @@
+-- SQL\Administrator
+-- 1234@Admin
+
+-- SQLAD 110 - 30 20 20 20 20
+-- SQL01 110 - 30 20 20 20 20-
+-- \\Sql01\mssql     -- DataFile(MSSQL)
+-- \\Sql01\mssql2    -- Backups(MSSQL)
+-- \\Sql01\mssql3    -- LogFile(MSSQL)
+-- \\SQL01\SetupFile -- SetupFile
+-- SQL02 110 - 30 20 20 20 20
+-- \\Sql02\mssql     -- DataFile(MSSQL)
+-- \\Sql02\mssql2    -- Backups(MSSQL)
+-- \\Sql02\mssql3    -- LogFile(MSSQL)
+-- \\SQL02\SetupFile -- SetupFile
+-- SQL03 110 - 30 20 20 20 20
+-- \\Sql03\mssql     -- DataFile(MSSQL)
+-- \\Sql03\mssql3    -- Backups(MSSQL)
+-- \\Sql03\mssql2    -- LogFile(MSSQL)
+-- \\SQL03\SetupFile -- SetupFile
+-- 1234@Admin
+
+
+
+-- MY BDE_CLASS
+
+
+
+
+
+
+-- Class-01-Database-Server-Intro-Azure-Reg 
+
+-- How is DATA STORED => A database is used to store and manage 
+
+-- DBMS: Databases Management Sytem
+   -- 1. RELATIONAL DATABASES
+      -- Microsoft SQL Server Database
+	  -- Oracle Database
+	  -- PostgresDB
+	  -- MariaDB
+	  
+   -- 2. NON RELATIONAL DATABASES
+      -- MongoDB
+	  -- DynamoDB
+	  -- Hadoop
+	  -- BigData
+	  -- Cosmos DB
+
+
+
+-- SQL/SEQUEL => STRUCTURE QUERY LANGUAGE => It is the language we use to communicate with Databases
+
+-- WHY DATA
+   -- Data is the number one most valuable resource.
+   -- It is used to make inform decision
+
+-- Various Database Roles
+  -- Database Administrator -- For us
+  -- Database Developer 
+  -- Dtabase Engineer
+  -- Database Analyst
+  -- Data Scientist
+
+
+  -- OUR ROLE
+    -- SQL Database Administrator
+	-- SQL Server Database Administrator
+	-- MS SQL DBA
+
+
+
+-- ROLE OF A DATABASE ADMINISTRATOR
+  -- Setup Database
+  -- Backup and Restore
+  -- Manage access and permission
+  -- Secure Database Environments
+  -- Performance tuning
+  -- Upgrading and Migration
+  -- Patching and Maintenance
+  -- Code Deployments
+
+
+-- WHAT MAKES UP A SERVER?
+  -- When you hear the word SERVER think of a Computer
+  -- A SERVER is just like your computer 
+
+
+
+-- HOW TO MOVE USER DATABASE (.mdf and .ldf files) from one drive to another drive
+   -- Take a full backup of the target database
+   -- No need to restart the SQL Server
+   -- We will have Database downtime since we will take DB offline.
+      -- We can not move files while they are being accessed and taking the database offline stops the files being used by SQL Server application
+   -- We can not use these steps to move master database files since its path is determined by SQL Server's startup parameter
+
+
+-- Why do we move?
+   -- Disk space issues
+   -- Do not place your database files in C drive
+
+-- There are 3 methods
+   -- Backup and Restore
+   -- Detach and Attach
+   -- Alter database and move Physical files
+
+
+-- Alter database and move Physical files
+-- Step 1
+   -- Identify the database files you want to work with ...
+   -- Select file_id, name, physical_name from [db_name].sys.database_files
+
+-- Lets create a new Database
+Create database MoveDemoDB
+
+Use Master
+Select file_id, name, physical_name from MoveDemoDB.sys.database_files
+
+
+Use Master
+Select file_id, name, physical_name from TestDB.sys.database_files
+
+-- 1	MoveDemoDB	    C:\MSSQL\MoveDemoDB.mdf
+-- 2	MoveDemoDB_log	C:\MSSQL\MoveDemoDB_log.ldf
+
+-- Step 2
+   -- Take the Database Offline - Close the existing connections to the database
+   Alter database [db_name] set offline with rollback immediate
+
+    Alter database TestDB set offline with rollback immediate
+-- OR with GUI
+-- Right click on the Database - Tasks - Take Offline - Check the box (Drop All Active Connection) - Ok
+
+-- Step 3
+   -- Move MDF and LDF files of the TARGET DATABASE to new location 
+   -- i.e From C drive to F drive where you have enough space (Cut and Paste)
+   -- Note: Make sure your SQL Server can access the new location else the below error will occur: 
+   -- Unable to open the pyhsical file "F:\new\MoveDemoDB_Data.mdf"... Access is denied
+
+-- Step 4
+   -- Change the file location inside SQL Server - Update system catalog
+   Alter database MoveDemoDB 
+   Modify file (name = 'MoveDemoDB', filename = 'E:\MSSQL\MoveDemoDB.mdf')
+
+   Alter database MoveDemoDB 
+   Modify file (name = 'MoveDemoDB_log', filename = 'F:\MSSQL\MoveDemoDB_log.ldf')
+   	
+
+-- Step 5
+   -- Bring the database online
+   Alter database [db_name] set online
+
+   -- Verify that your process is finished / completed successfully
+   Select file_id, name, physical_name, state_desc from [db_name].sys.database_files
+
+-- TO SET DEFAUT FILE LOCATION
+-- Right click on the SQL Server Instance name - Properties - Database Settings - Database Default Location - Click the  Eclipse Button on each drive - Seect the location you want - for Data: Log: Backup and if there is no Backup Drive you can leave it - Ok - Now right click on the SQL Server name - Restart - So that our modification can take effect 
+-------------------------------------------------------------------------------------------------
+
+
+-- TO RENAME A DATABASE
+
+Create database USA_DB
+
+-- a. SSMS GUI Method
+-- b. Using scripts Tsql
+
+-- a. SSMS GUI Method
+-- Right click on the Database name and click Rename then rename it
+
+-- b1. Using scripts
+Exec sp_renamedb N'USADB', N'USA';
+
+-- b2. Using scripts
+Alter Database USA Modify Name = USA_DB;
+
+
+
+-- View a Physical name of a database i.e (mdf and ldf) files
+Use USA_DB
+Select name, Physical_name from USA_DB.SYS.Database_files
+-------------------------------------------------------------------------------------
+
+-- To view all the list of Databases files (mdf and ldf) in an instance
+Select file_id, name, physical_name from SYS.Master_files
+-------------------------------------------------------------------------------------
+
+-- TO RENAME LOGICAL FILENAME ie -> 
+-- MDF FILE => known as the primary or main data file of a SQL database, which contains the schema and data
+-- LDF FILE => known as log data file which contain log file and is the transaction log file of a SQL database. The transaction log is used to guarantee the data integrity of the database and for data recovery.
+-- Rename Logical name -- mdf file
+Use USA_DB
+Alter database USA_DB
+Modify file (name = USA, newname = USA_DB) 
+
+-- Rename Logical name -- ldf file
+Use USA_DB
+Alter Database USA_DB
+Modify file (name = USA_log, newname = USA_DB_log) 
+
+
+
+-- Note! Before you start TAKE FULL BACKUP OF THE DATABASE
+-- Note! This change require database DOWNTIME in other to make the changes
+
+-- TO RENAME PHYSICAL FILE NAME
+---------------------------------------------------------------------------------------------
+-- Step1: Move Database to Single user mode.
+-- Take DB offline
+Alter Database USA_DB
+Set single_user with Rollback immediate
+
+-- Step2: Take the database Offline (Make sure there are no open connections).
+Alter Database USA_DB set Offline
+-- Output: Failed to restart the current database. The current database is switched to master.
+
+-- Step3: Rename the PHYSICAL database file names of the target database where its located directly (in the folder) since will already take it OFFLINE bcos if its not in offline will would not be able to do it.
+
+-- Step4: Update the system catalog where the old file name is present
+-- mdf File
+Alter Database USA_DB
+Modify file(name = 'USA_DB', Filename = 'E:\MSSQL\USA_DB.mdf')
+
+-- ldf File
+Alter Database USA_DB
+Modify file(name = 'USA_DB_log', Filename = 'F:\MSSQL\USA_DB_log.ldf')
+
+-- Now BRING BACK the Database online
+Alter Database USA_DB set online
+
+-- Bring the Database to MULTI-USER Mode
+Alter Database USA_DB
+Set Multi_User
+
+-- Now let check it
+Select name, Physical_name from USA_DB.SYS.Database_files
+-- After Rename And import Student File records from Backup into USA_DB
+
+
+
+-- PRIMARY KEY AND FOREIGN KEY
+-----------------------------------------------------------
+Create Database BankDB
+
+Use BankDB
+Create Table Dept
+(
+DeptID iNT Primary Key,
+DeptName Varchar(50)
+)
+
+--Insert Records
+-------------------------------------------
+Insert into Dept (DeptID, DeptName)
+Values
+(101, 'Law'),
+(102, 'Education'),
+(103, 'Engr'),
+(104, 'Tech'),
+(105, 'Law')
+
+--Create another Table Students
+--------------------------------------------
+Create Table Students
+(
+StudentID Int Primary Key,
+StudentName Varchar(50),
+DeptID int Foreign Key References Dept(DeptID)
+)
+
+--Insert Records
+-------------------------------------------
+Insert into Students
+Values
+(001, 'Ajayi', 104),
+(002, 'Anne', 105)
+
+Use BankDB
+Select * from Students
+
+Insert into Students
+Values
+(003, 'Max', 101),
+(002, 'Steve', 105)
+
+Create Table Employee
+(
+EmpID int Primary Key, 
+EmpName varchar(20),
+EmpDeptID int Foreign Key References Dep
+)
+
+-- NOT FINISH HERE -- TO BE CONTINUE
+
+
+-- TSQL -> SQL AUTHENTICATION ACCOUNT
+----------------------------------------------------------------------
+Use AdventureWorks2016
+Create Login Tkenny with Password = '1234@Admin';
+
+
+-- TSQL -> WINDOWS AUTHENTICATION ACCOUNT 
+-----------------------------------------------------------------------
+Create Login [SQL\Arinze] from Windows;
+
+-- T-SQL To grant read and write access to tables in a database in SQL Server?
+-----------------------------------------------------------------------
+-- DATA READER
+USE AdventureWorks2016
+
+ALTER ROLE db_datareader ADD MEMBER Arinze
+GO
+
+-- DATA WRITER
+ALTER ROLE db_datawriter ADD MEMBER Arinze
+GO
+
+-- DATA READER
+USE AdventureWorks2016
+go
+
+exec sp_addrolemember db_datareader, Arinze 
+go
+
+-- DATA WRITER
+exec sp_addrolemember db_datawriter, Arinze
+go
+
+--  TSQL TO CREATE A USER FOR A LOGIN IN A DATABASE
+-----------------------------------------------------------
+
+-- Create Login  Dammy
+USE TestDB
+Create Login Dammy with Password = '1234@Admin';
+
+-- User Dammy TestDB
+USE TestDB
+Create User Dammy For Login Dammy;
+
+-- Grant access to Dammy to be data reader and data writer
+USE TestDB
+go
+
+Exec sp_addrolemember db_datareader, Dammy 
+go
+
+-- DATA WRITER
+USE TestDB
+go
+Exec sp_addrolemember db_datawriter, Dammy
+go
+
+
+
+
+-- CLASS-07-LOCATE DATA BASE FILES-INCREASE DATABASE SIZE-ATTACH DETACH DATABASE-LOG SHIPPING-DATABASE MIRRORING-REPLICATION
+---------------------------------------------------------------------------------------------------------------------
+
+-- ADHOC / ONDemand -- Means its not part of schedule is just on request for example when you have to take backup in case of ADHOC will take BACKUP with COPY ONLY
+
+-- Discuss SQL Server Backup Automation Options
+   -- We discussed using SQL Server Maintenance Plan
+   -- Ola Hallengren -- Open Source(free) its developed by the IT community
+   -- Commvault -- Enterprise, Commercial, third party , vendor -- Paid 
+   -- Rubric 
+   -- Cohesity
+   -- Lite Speed Backup
+
+-- Question - Can you tell us how you take backup in your environment
+-- Answer - Sure in my environment we use Ola Halllengren as our backup tool, Ola hallengren is an open choice tool is very robust and advance tool so we use it to take full backup, differential backup and actually we use Ola Hallengren on all of our maintenance plan also not just only backup so in my environment we take our full backup every sunday, we take our diffrential backup every day and we take our transaction log backup every 15min that is how we take our backup in my environment.
+
+-- Question - What if you have 20TB database how do you then manage it
+-- Answer  - Well if you have very large database it make sense to take full backup once in a week, differential backup every day and transaction log backup every 15min, 20min or 30min it really up to you, if you taking full backup every day that means you are going to consume alots of space on your disk so instead of comsume all those space on your disk you can just take full backup once a week, take differential backup every day since differential backup usually smaller and take your transaction log backup every 15 minute that is good strategy you can implement, like I said in my company will take our backup every day and will use Ola Hallengren for it. 
+
+
+-- Question => If you are request to take backup without break our transaction log backup what would you do when taking the backup 
+--Answer => I will do COPY ONLY
+
+
+-- CREATING DATABASE COMES WITH TWO FILES
+
+-- 1. Primary Data File (.mdf): This file contains the data and objects in the database
+   -- Such as tables, indexes, stored procedures, and views.
+
+   -- And you can only have one .mdf file while any other will come with .ndf
+   -- And you can only have 1 mdf and every other DATA File is .ndf
+   -- And having multiple DATA File improve the performance of database
+      -- .ndf
+      -- .ndf
+-------------------------------------------------
+
+-- 2. Transaction Log File (.ldf): This file records all transactions and modifications made to the database. It ensures the ability to roll back transactions and restore the database to a consistent state in case of a failure or to achieve point-in-time recovery.
+ 
+   -- .ldf
+   -- .ldf
+-- You can many .ldf file but does not improve performance of database
+-- And having multiple LOG File does not improve performance of database
+
+-- For example, in SQL Server Management Studio (SSMS) or through Transact-SQL (T-SQL), you would typically execute a script like the following to create a database:
+
+
+-- C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\
+-- C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\
+
+CREATE DATABASE YourDatabaseName
+ON
+(
+    NAME = YourDatabaseName_data,
+    FILENAME = 'C:\YourDataFolder\YourDatabaseName.mdf', -- YourDatabaseName.mdf is the primary data file.
+
+    SIZE = 10MB,
+    MAXSIZE = UNLIMITED,
+    FILEGROWTH = 10%
+)
+LOG ON 
+(
+    NAME = YourDatabaseName_log,
+    FILENAME = 'C:\YourLogFolder\YourDatabaseName.ldf', -- YourDatabaseName.ldf is the transaction log file.
+    SIZE = 8MB,
+    MAXSIZE = 100MB, 
+    FILEGROWTH = 5MB
+);
+
+
+-- C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\
+-- C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\
+CREATE DATABASE DatabaseFileDB
+ON
+(
+    NAME = DatabaseFileDB,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\DatabaseFileDB.mdf', -- YourDatabaseName.mdf is the primary data file.
+
+    SIZE = 10MB,
+    MAXSIZE = UNLIMITED,
+    FILEGROWTH = 10%
+)
+LOG ON 
+(
+    NAME = DatabaseFileDB_log,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\MSSQL\DATA\DatabaseFileDB.ldf', -- YourDatabaseName.ldf is the transaction log file.
+    SIZE = 5MB,
+    MAXSIZE = 100MB,
+    FILEGROWTH = 5MB
+);
+
+
+
+-- CLASS-08-SINGLE POINT OF FAILURE MANUAL FAILOVER- HIGH AVAILABILITY - DISASTER RECOVERY - DATABASE MIRRORING - ALWAYSON
+------------------------------------------------------------------------------------------------------------
+
+-- SINGLE POINT OF FAILURE => Is when your application is connect to database server with the helps of connecting string and if there is disaster on the primary server and you loose the database that is called SINGLE POINT OF FAILURE even though you are storing BACKUP of your database somewhere and you loose the primary server.
+
+   -- SOLUTION you can create another server and restore backup file then change application connection string to the new database server and restore your database and the process of bring the secondary server database online is manual process called MANUAL FAILOVER
+
+
+
+-- QUESTION => Do you have experience with HIGH AVAILABILITY AND DISASTER RECOVERY(HADR)
+-- Answer => Yes => QUESTION => In the environment what are ways to implement High Availability and Disaster Recovery(HADR)
+-- Answer => Well we take regular backup in our environment and you know what happened if there is disaster. You have to get copy of your backup files and you have to store it on a new server assumming you have to put it into consideration the time setting up the new server if you lost your main server, so instead of rely on backup so one of the solution is that we implement in the past is LOG SHIPPING. 
+-- Now with transaction LOG SHIPPING there is shipping log from primary database to the secondary database using three (3) major jobs (1) LS BACKUP on the primary, (2) LS COPY AND (3) LS RESTORE on the secondary database. Now the issue with the solution is that the primary database is always ahead of the secondary database if there was a disaster there is possiblilty for us to have data loss. So we can loss data. So everything on the primary is not always present on the secondary because of the LAG in between the time and the interval, that it take the job to run. So but the advantage is this with LOG SHIPPING  you can quickly recover from disatser from paired to just taking ordinary backup.
+
+
+
+
+-- DATABASE MIRRORING
+   --  Whatever changes happening-------------- It automatically(INSTANTENOUSLY) REFLECT in the MIRROR
+   --  in the PRINCIPAL------------------------  Does not use any JOBS
+   --  APPLICATION-----------------------------> DB PRINCIPAL------------------------------------>DB MIRROR
+
+
+
+
+
+
+
+-- ALWAYSON 01.15
+-- You can have up to 8 secondary replicas within your cluster including primary replica making 9
+-- There can be only one primary replica
+-- The Application connects to the LISTENER and the LISTENER points to what ever replica is primary in the cluster 
+
+
+-- SET UP ALWAYSON
+   -- 1. You have to set up your windows failover cluster based on the nodes/replicas participating 
+      -- a. Go to your Server Manager SQL01 - Add roles and Features - Next - Next - Next - Select FAILOVER CLUSTERING - Add features - Install (Add features) --   a2. Do same thing on SQL02
+	  -- Check FAILOVER CLUSTER MANAGER on server manager - Tools - if not there then its pending you need to restart your server - plan
+	  -- b. Cluster validation based on the nodes
+	  -- SQL01 -- We can have up to 8 nodes/replicas - Click FAILOVER CLUSTER MANAGER - VALIDATE CONFIGURE - NEXT - Enter Name - SQL01 - Add - SQL02 - Add - Next - Next - it will begin the validation - it give us REPORT - Check by open it on EDGE 
+	  -- c. Create the cluster
+	     -- Create the cluster now using the validated nodes - Finish - Next - Cluster Name - SQLCLUSTER - Now we need to provide IP address make sure you use IP address that has not been use before from all server you have. - 10.0.0.8 - Next - Next - it will start the process of the cluster
+	  -- SQL01 - Now immediately it finished you will see it has created the SQLCluster.sql.com - Open it - Roles (Empty at the moment) - Nodes -(SQL01 , SQL02 it will show you 2 nodes)
+	  -- Now on SQL02 - you dont have to do anything - Go to Server Manager - Tools - Failover Cluster Manager - It will automatically show up on SQL02 
+
+   -- 2. Go to SQL Server configuration manager to enable AlwaysOn and you need to do it on all the nodes participating on the cluster - this will prompt you to restart SQL Services
+      -- Go to SQL01 - Configuration Manager - SQL SERVER SERVICES - SQL SERVER (MSSQLSERVER) - Right click - Properties - AlwaysOn High Availability - Check - Enable AlwaysOn Availability Groups - Apply - untill restarted - Ok - Ok - So on theSQL SERVER (MSSQLSERVER) - Right click and Restart .
+
+	  -- SQL02 - REPEAT SAME 
+
+   -- 3. Go to the SQL Server instance to create your availability Groups.
+      -- a. For  a database to be a part of the availability groups it must be in FULL RECOVERY mode and you must have taken a full backup
+
+	  -- 1.46
+
+-- Replication: Is another way of replicating data from one database or from one server to another server and doesn’t fall on High Availability because it technically not. (We are replicating tables from one database to the other)
+
+-- Note! Replication is not the whole database like we have in Log shipping, Mirroring and Always On it’s just replicating view table within the database in the same server or in another server.
+
+-- Types: 
+-- • Snapshot replication
+-- • Transactional replication (Most used): we replicate tables with the primary keys from the publisher to the subscriber through the distributor. Steps: Configure Distributor,
+
+-- Configure Publisher, Configure Subscriber
+   -- •	Merge replication
+   -- •	Peer to Peer replication
+
+-- Interview Questions
+   -- 1. Do you have experience with Always On?
+   -- 2. Do you have experience with High Availability and Disaster Recovery?
+   -- 3. What HADR strategy are you familiar with? Simply means how can you prevent or minimize disaster in your environment, how can we make sure that our application is highly available.
+
+-- HA – High Availability
+-- DR – Disaster Recovery
+   -- Once the Database is not available then Application is not going to be available and how soon can we get back online and how much data can we get back to which leads us to RPO and RTO
+
+-- • RPO – Recovery Point Objective (How much data can we get back)
+-- • RTO – Recovery Time Objective (How long it will take to get back online)
+
+-- Which brings us to? 
+   -- 1. Backup
+   -- 2. LogShipping
+   -- 3. Mirroring
+   -- 4. AlwaysOn – Which is the Highest and the best. 
+
+-- LogShipping -- Using DISASTER RECOVERY
+   -- Failover is Manual unlike Mirroring that Failover is Automatic
+
+-- App         DB – primary (Database)   – LS Backup -- The PRIMARY is always ahead of SECONDARY
+             -- DB – secondary (Database) – LS Copy & LS Restore
+
+-- Always have a copy in DB – secondary but it has limitation because for example LogShipping Backup run every 1 minute and if disaster occur it take next 1 minute to start next backup that is why Primary – LS Backup is always ahead of the secondary and there can be data lost in between the backup process timing because the cluster string needs to change to secondary in case of disaster.
+
+-- QUESTION => Do you have experience with HIGH AVAILABILITY AND DISASTER RECOVERY(HADR)
+-- Answer => Yes => QUESTION => In the environment what are ways to implement High Availability and Disaster Recovery(HADR)
+-- Answer => Well we take regular backup in our environment and you know what happened if there is disaster. You have to get copy of your backup files and you have to store it on a new server assumming you have to put it into consideration the time setting up the new server if you lost your main server, so instead of rely on backup so one of the solution is that we implement in the past is LOG SHIPPING. Now with transaction log shipping there is shipping log from primary database to the secondary database using three (3) major jobs (1) LS BACKUP on the primary, LS COPY AND LS RESTORE on the secondary database. Now the issue with the solution is that the primary database is always ahead of the secondary database if there was a disaster there is possiblilty for us to have data loss. So we can loss data. So everything on the primary is not always present on the secondary because of the LAG in the between the time and the interval that it take the job to run. So but the advantage is this with LOG SHIPPING  you can quickly recover from disatser from paired to just taking ordinary backup.
+
+-- DATABASE MIRRORING
+-----------------------------------------------------------------------------------------
+   -- It’s DEPRECATED – No longer supported by Microsoft.
+
+-- ADVANTAGE OF MIRRORING
+-- Whatever change happening in the DB PRINCIPAL is instantaneous reflected to the DB Mirror.
+ 
+-- App    ------------------ DB Principal -- Witness Server -- Witness server is AUTOMATIC FAILOVER
+-- App    ------------------ DB Mirror    -- Witness Server
+   
+   --  Witness (It helps us to set up witness we can have automatic FAILOVER (switch)) that is if will set up WITNESS.
+   -- is constantly checking on the PRIMARY is everything is Ok and immediately WITNESS SERVER discovered that DB PRINCIPAL is failed it immediately switch to DB MIRROR 
+-- ADVANTAGE OF WITNESS SERVER 
+   -- 1. It check the heartbeat of the primary
+   -- 2. It can helps automatically failover our database to the Mirror server it the Primary ever goes down
+   -- 3. It allows AUTOMATIC FAILOVER
+
+-- Disadvantage – The Database on the mirroring (on secondary) the content cannot be view unless you do Failover on the principal because it always on restoring mode.
+
+-- DATABASE MIRRORING STEPS
+   -- 1. Take FULL BACKUP and T.LOG of the backup of the database
+   -- 2. Restore the FULL and T.LOG backup on the Mirror server in NO RECOVERY MODE
+   -- 3. Start the MIRRORING Process.
+
+-- NOTE -- SQL01 as PRIMARY while SQL02 is our Mirror
+   -- Pres req
+      -- 1. Create Database in Instance 1 SQL01 for example MirroringDB
+      -- 2. Make sure that the Database you created is in Full recovery mode
+	  -- 3. Create a table in the database in instance 1 - Create Table Test (TestID int)
+	  -- 4. Make sure your backups folder are in shared with sql server service account with full permission ready and write
+	  -- 5. Take FULL BACKUP 
+	  -- 6. Take T.log backup 
+	  -- 7. If T.Log backup is running for the database that you want to put in mirroring, I recommend you temporarily disable it and then enable it back when you are done.
+	  -- 8. Restore the Database In Instance 2 with option Restore State No Recovery
+	  -- 9. And then MIRROR Database in Instance 1 with 
+	     -- PRINCIPAL AT INSTANCE 1
+		 -- MIRROR AT INSTANCE 2
+		 -- WITNESS AT INSTANCE 3
+-- Lets begin the practical
+   -- On the INSTANCE1 SQL01 - Right click on the Database - CashDB_Mirroring - Tasks - Mirror - Configure Security... - Configure Database Mirroring Security Wizard - Do you want to configure security to include a witness server instance: Yes - Next - PRINCIPAL:SQL01 - Listener Port: 5022 - Next - Mirror Server: SQL02 - Click on: Connect (INSTANCE2 SQL02 - Listener Port: 5023 - Witness server Instance: Instance 3 SQL03: Connect (SQL03) - Listener Port: 5024 - Endpoint name: Mirroring - Next - Next - Finish - Close - Start Mirroring - 
+      -- Principal network address: TCP:/SQL01:5022
+	  -- Mirror Network address: TCP:/SQL02:5023
+	  -- Witness Network address: TCP:/SQL03:5024
+	  -- Operating mode: High safety with automatic failover (synchronous) 
+	  -- Yes
+	  -- Ok
+	  -- Restart the INSTANCE 1 By right click on the INSTNCE NAME SQL01 then RESTART
+	  -- If anything happened to the PRINCIPAL SERVER it automatically swicthed to the Mirror with the help of WITNESS
+
+
+-- Create Database CashDB_Mirroring for Database Mirroring and make sure the Database is in FULL Recovery mode
+Create Database MirroringDB
+
+-- Create a table into the database [CashDB_Mirroring]
+Create Table Test
+(TestID int)
+
+-- Backup the Database that is participating in Database Mirroring
+BACKUP DATABASE [CashDB_Mirroring] 
+TO  DISK = N'I:\MSSQL\CashDB_Mirroring.bak' 
+WITH NOFORMAT, NOINIT,  
+NAME = N'CashDB_Mirroring-Full Database Backup', 
+SKIP, NOREWIND, NOUNLOAD,  STATS = 10
+GO
+
+-- Take T.LOG backup of the Database Mirroring
+BACKUP LOG [CashDB_Mirroring] 
+TO  DISK = N'I:\MSSQL\CashDB_Mirroring.bak' 
+WITH NOFORMAT, NOINIT,  
+NAME = N'CashDB_Mirroring-Full Database Backup', 
+SKIP, NOREWIND, NOUNLOAD,  STATS = 10
+GO
+
+-- SHARE YOUR BACKUP FOLDER WITH YOUR SERVICE ACCOUNT(eg-ssms) Read and Write permission (\\Sql01\mssql3)
+
+-- Now RESTORE the database to Mirror server that is SQL02
+USE [master]
+RESTORE DATABASE [CashDB_Mirroring] 
+FROM  DISK = N'\\Sql01\mssql3\CashDB_Mirroring.bak' 
+WITH  FILE = 1,  NORECOVERY,  NOUNLOAD,  STATS = 5 -- WITH NO RECOVERY MODE
+RESTORE LOG [CashDB_Mirroring] 
+FROM  DISK = N'\\Sql01\mssql3\CashDB_Mirroring.bak' 
+WITH  FILE = 2,  NOUNLOAD,  STATS = 5
+
+-- Always ON High Availability
+-----------------------------------------------------------------------------------------------------
+-- You can have up to 9 REPLICA (9 SERVER) because when one is down another one we take over and among all the replica only one can be PRIMARY while the rest are REPLICA
+-- APP     listener   DB Primary Server (in case primary down then to Secondary replica)
+
+
+
+
+
+
+-- Class-11-RDCM-Logins-WindowsLogin-SQLServerLogin-ServerRoles-Users-DatabaseRoles
+-----------------------------------------------------------------------------------------
+-- Create Login Hammed
+Create Login Hammed with Password = '1234@Admin';
+
+-- Create User Hammed
+USE AdventureWorks2016
+Create User Hammed For Login Hammed;
+
+USE AdventureWorks2016
+Grant Select on Person.Address To Hammed
+
+-- Grant to view stored procedure in sql server
+Grant View Definition On [AdventureWorks2016].[HumanResources].[uspUpdateEmployeePersonalInfo] To Hammed;
+
+Grant Execute on [HumanResources].[uspUpdateEmployeePersonalInfo]
+
+-- Grant ACCESS TO TO VIEW ALL STORE PROCEDURE
+-- GRANT EXECUTE ON ALL PROCEDURES TO [user_name]
+GRANT EXECUTE ON ALL PROCEDURES TO Hammed
+
+--GRANT EXECUTE ON ALL PROCEDURES TO [user_name]
+
+
+Exec [HumanResources].[uspUpdateEmployeePersonalInfo]
+
+GRANT EXECUTE ON ALL PROCEDURES TO [user/role name]
+GRANT EXECUTE ON ALL PROCEDURES TO John
+GRANT EXECUTE ON ALL PROCEDURES TO public
+
+-- Class-12
+-- LoginsAtTheInstanceLevel - UsersAtTheDbLevel - ServerRoles- WithinTheScopeOfTheDb - OrphanUsers - UsersWithoutCorrespondingLogin
+-- HowToResolveOrphanUsers - IntroductionToTSQL - TypesOfSQLcommand - SQLserverDataTypes -  SQLserverConstraint
+--------------------------------------------------------------------------------
+
+
+
+-- Class-13-TSQL-SQLstatements-DataType-CreateStatement-SQLconstraint-Insert-Select-Update-Distinct-Filters
+
+
+
+-- Class-14-TSQL-SQLstatement-Datatype-CreateStatement-SQLconstraint-Insert-Select-Update-Distinct-Filters
+
+
+
+
+-- Class-15AB Joins - StoredProcedures - Views - TemporaryTable - TableVariable
+
+
+/* 
+NORMALIZATION in SQL Server -> is the process of 
+organizing data in a database in such a way the reduces 
+redundancy and minimizes data anomalies.
+The process involves dividing a large table into smaller 
+tables and defining relationship btw them to reduce data 
+duplication and inconsistence
+*/
+
+-- JOINS 
+
+-- TYPES OF JOINS
+-- INNER JOIN
+-- LEFT OUTER JOIN
+-- RIGHT OUTER JOIN
+-- SELF JOIN
+-- CROSS JOIN
+
+-- QUESTION -> Can we get details of the customer ID and like them to the Orders that they placed 
+
+Use NORTHWND
+Select * From Orders
+Select * From Customers
+
+-- They have CUSTOMERID common
+
+-- Lets write Join script
+-- Tablename.Columnname
+-- Example 1
+Select Orders.OrderID, Orders.CustomerID, Customers.ContactName, Customers.ContactName
+from Orders 
+Join Customers on Orders.CustomerID = Customers.CustomerID
+
+-- Example 2
+Select Customers.ContactName, Customers.Country, Customers.Country, Orders.OrderDate, Orders.ShipCountry, Orders.ShipCountry
+from Customers
+Join Orders on Customers.CustomerID = Orders.CustomerID
+
+-- Example 3 
+-- Join 3  Tables
+Select * from Orders
+
+Select * from [Order Details]
+
+Select * from Products -- show us ProductName
+
+Select Orders.OrderID, Orders.CustomerID,  [Order Details].ProductID, [Order Details].UnitPrice, [Order Details].Quantity, Products.ProductName
+From Orders
+Join [Order Details] on Orders.OrderID = [Order Details].OrderID 
+Join Products on Products.ProductID = [Order Details].ProductID
+
+
+Select Orders.OrderID, Orders.CustomerID,  [Order Details].ProductID, [Order Details].UnitPrice, [Order Details].Quantity, Products.ProductName
+From Orders
+Join [Order Details] on Orders.OrderID = [Order Details].OrderID 
+Join Products on [Order Details].ProductID = Products.ProductID
+
+-- Example 4
+
+Select * from Orders -- Orderid, customerid
+
+Select * from Employees -- EmployeeID, Lastname 
+
+Select * from Customers -- companyName 
+
+Select Orders.OrderID, Orders.CustomerID, Customers.ContactName, Employees.EmployeeID, Employees.LastName
+from Orders
+Join Customers on Orders.CustomerID = Customers.CustomerID
+Join Employees on Orders.EmployeeID = Employees.EmployeeID
+
+
+-- Introducing -- ALIAS -- It accept also without (AS)
+Select Customerid as CusID, CompanyName as CN, contactname as ConName
+From Customers
+
+Select Customerid CusID, CompanyName CN, contactname ConName
+From Customers
+
+-- Select orders.orderID, orders.customerID, customers.companyname, customers.contactName -- SAME AS BELOW
+Select o.orderID, o.customerID, c.companyname, c.contactName
+From orders o
+Join Customers c on o.CustomerID = c.CustomerID
+
+Select j.orderID, j.customerID, xy.companyname, xy.contactName
+From orders j
+Join Customers xy on j.CustomerID = xy.CustomerID
+
+
+
+-- STORED PROCEDURES -> 
+-------------------------------------------------------------------------------------------
+/* 
+STORED PROCEDURES is a set of statement(s) that perform some 
+defined actions. We make stored procedures so that we can reuse 
+statements that are used frequently Stored procedures are similar
+to functions in programming. They can accept parameters,  
+and perform operations when we call them
+*/
+
+/*
+SYNTAX 
+CREATE PROCEDURE us_customers AS
+SELECT customer_id, first_name
+FROM Customers
+WHERE Country = 'USA';
+*/
+
+-- Executing Stored Procedure
+-- EXEC us_customers;
+
+-- Parameterized Procedure
+/*
+We can pass our own data to stored procedures so the 
+same SQL command works differently for different data.
+Suppose we want to fetch records where the value is USA 
+in the country column. 
+So we'll write our SQL statement as,
+*/
+
+/*
+SELECT *
+FROM Customers
+WHERE country = 'USA'; 
+
+-- STORE PROCEDURE
+CREATE PROCEDURE ctr_customers @ctr VARCHAR(50) AS
+SELECT customer_id, first_name
+FROM Customers
+WHERE Country = @ctr;
+*/
+
+/*
+-- Calling the stored procedure with 'USA' as parameter value
+EXEC ctr_customers 'USA';
+
+-- Calling the same stored procedure again with another parameter value 'UK'
+EXEC ctr_customers 'UK';
+*/
+
+/*
+-- Creating the stored procedure with cus_id and max_amount as parameters
+
+CREATE PROCEDURE order_details @cus_id INT, @max_amount INT AS
+SELECT Customers.customer_id, Customers.first_name, Orders.amount
+FROM Customers
+JOIN Orders
+ON Customers.customer_id = Orders.customer_id
+where Customers.customer_id = @cus_id AND Orders.amount < @max_amount;
+*/
+
+/*
+Now to call this function,
+
+EXEC order_details 4, 400;
+*/
+
+-- Drop Procedure -> delete stored procedures by using the DROP PROCEDURE command
+
+-- DROP PROCEDURE order_details;
+
+
+
+-- CREATE STORE PROCEDURE -- Always on a new QUERY EDITOR as first query
+-- STORE PROCEDURE -> use SP_... (store procedure) or USP_...(user store procedure) 
+Create Procedure Sp_CustomersDetails
+As
+Select Orders.OrderID, Orders.CustomerID, Customers.ContactName, Employees.EmployeeID, Employees.LastName
+from Orders
+Join Customers on Orders.CustomerID = Customers.CustomerID
+Join Employees on Orders.EmployeeID = Employees.EmployeeID
+
+-- Calling the stored procedure --  Sp_CustomersDetails
+EXEC Sp_CustomersDetails
+
+
+Create Proc Usp_CreateTable
+As
+Create Table GPT
+(ChartID int)
+
+Insert into GPT
+Values
+(1),
+(2),
+(3)
+
+Exec Usp_CreateTable -- It will create table and Insert records
+
+Select * from GPT
+
+-- TO DELETE RECORDS IN THE TABLE
+Truncate Table GPT
+
+-- Lets create another TABLE
+
+Create table Dummy
+(DummyID int)
+
+Insert Into Dummy
+Values (1),(2),(3),(4)
+
+Select * from Dummy
+
+-- DELETE RECORDS IN THE TABLE
+Truncate Table Dummy
+
+Select * from Dummy
+
+
+-- How to wrap Truncate statement into procedure
+Create Procedure usp_truncateTable
+As
+Truncate Table GPT
+
+Select * from GPT
+
+Use NORTHWND
+Exec usp_truncateTable
+
+Select * from GPT
+
+-- Learning Time
+Create Procedure usp_City -- Exec usp_City 
+As
+Create table City
+(CityID int, CityName Varchar(30))
+
+Exec usp_City
+
+Create Procedure sp_CityTable -- Exec sp_CityTable 
+As 
+Insert into City
+Values (101, 'Berlin')
+
+Exec sp_CityTable 
+
+Create Proc SelectAllFromCity
+As
+Select * from city
+
+Exec SelectAllFromCity
+
+
+-- DECLARING VARIABLE IN SQL
+------------------------------------------------------------------------------------------
+/*
+VARIABLE is a named container that can store a single 
+ gvalue or a set of values of a specific data type
+*/
+-- Hardcoding
+Select * From Customers
+Where Country = 'Uk'-- Hardcoding
+
+-- DECLARING VARIABLE IN SQL instead of Hardcoding
+Declare @Country nvarchar(15)
+Set @Country = 'Uk'
+
+
+Select * From Customers
+Where Country = @Country
+
+
+-- Example 2
+Select * from Customers
+where Country = 'Uk' or City = 'Berlin'
+------------------------------------------------
+
+Use NORTHWND
+Declare @country nvarchar(15)
+Declare @city nvarchar(15)
+Set @Country = 'Sweden'
+Set @city = 'Paris'
+
+Select * from Customers
+where Country = @Country or City = @city
+
+------------------------------------------------
+-- Store Procedure and declaring Variable
+
+Use NORTHWND
+Create Procedure sp_Citystate
+@country nvarchar(15),
+@city nvarchar(15)
+
+As
+
+Select * from Customers
+where Country = @Country or City = @city
+
+Exec sp_Citystate @Country = 'USA', @city = 'Berlin'
+
+Exec sp_Citystate  'USA', 'Berlin' -- Same as above
+--------------------------------------------------
+
+-- Without variable parameter
+Create proc usp_ccity
+As
+Select * from Customers
+Where Country = 'USA' or City = ' Seattle'
+
+
+Exec usp_ccity
+
+
+------------------------------------------------------
+Create procedure selectAllCustomers
+@City nvarchar(30),
+@PostalCode nvarchar(10)
+As
+Select * from Customers 
+Where City = @City and PostalCode = @PostalCode
+Go
+
+Exec SelectAllCustomers @city = 'Berlin', @PostalCode = '12209'
+
+
+Use NORTHWND
+Create View vw_selectcustomerOrder
+As
+SELECT c.customerid, c.companyname, o.orderid from
+customers c
+Join Orders o on c.customerID = O.CUSTOMERid
+where CompanyName = 'Around the Horn'
+
+Go
+
+
+Select * From vw_selectcustomerOrder
+
+
+Use AdventureWorks2016
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [CreditCardID]
+      ,[CardType]
+      ,[CardNumber]
+      ,[ExpMonth]
+      ,[ExpYear]
+      ,[ModifiedDate]
+  FROM [AdventureWorks2016].[Sales].[CreditCard]
+
+
+
+-- VIEWS
+--------------------------------------------------------------------------------------------------------------------
+ -- 'CREATE VIEW' must be the first statement in a query batch.tt/mm/
+Use AdventureWorks2016
+create view vw_creditcard
+as
+
+SELECT [CreditCardID]
+      ,[CardType]
+      ,[CardNumber]
+      ,[ExpMonth]
+      ,[ExpYear]
+FROM [AdventureWorks2016].
+
+
+------------------------------------------------------------------------------------------------------------------
+Create Procedure Sp_CustomersDetails
+As
+Select Orders.OrderID, Orders.CustomerID, Customers.ContactName, Employees.EmployeeID, Employees.LastName
+from Orders
+Join Customers on Orders.CustomerID = Customers.CustomerID
+Join Employees on Orders.EmployeeID = Employees.EmployeeID
+
+-- Calling the stored procedure --  Sp_CustomersDetails
+EXEC Sp_CustomersDetails
+
+
+
+Create Proc Usp_CreateTable
+As
+Create Table GPT
+(ChartID int)
+
+Insert into GPT
+Values
+(1),
+(2),
+(3)
+
+Exec Usp_CreateTable -- It will create table and Insert records
+
+Select * from GPT
+
+-- TO DELETE RECORDS IN THE TABLE
+Truncate Table GPT
+
+-- Lets create another TABLE
+
+Create table Dummy
+(DummyID int)
+
+Insert Into Dummy
+Values (1),(2),(3),(4)
+
+Select * from Dummy
+
+-- TO DELETE RECORDS IN THE TABLE
+Truncate Table Dummy
+Select * from Dummy
+
+
+-- How to wrap Truncate statement into procedure
+Create Procedure usp_truncateTable
+As
+Truncate Table GPT
+
+Select * from GPT
+
+Exec usp_truncateTable
+
+Select * from GPT
+
+-- Learning Time
+Create Procedure usp_City -- Exec usp_City 
+As
+Create table City
+(CityID int, CityName Varchar(30))
+
+Exec usp_City
+
+Create Procedure sp_CityTable -- Exec sp_CityTable 
+As 
+Insert into City
+Values (101, 'Berlin')
+
+Exec sp_CityTable 
+
+Create Proc SelectAllFromCity
+As
+Select * from city
+
+Exec SelectAllFromCity
+
+RESTORE DATABASE Northwind  
+FROM DISK = 'C:\Backups\Northwind_full_03.bak'
+
+
+-- Class-16 => VIEWS - TEMPORARY TABLE - TABLE VARIABLE - SELECT INTO
+------------------------------------------------------------------
+
+-- VIEWS
+------------------------------------------------------------------------------------------
+/*
+VIEW -> is a virtual table based on the result of a SQL statement 
+View -> is like a virtual table that contains data from one or multiple tables. 
+It does not hold any data and does not exist physically in the database
+
+-- View help us to hide certain infomation that will dont want some user to see
+-- View are read only you can not edit or update
+*/
+
+-- Using NORTHWND
+Create View vw_selectCustomer
+As 
+Select CompanyName, ContactName
+From Customers
+Where Country = 'Brazil'
+
+
+-- Create View & Join - just for remind
+Select * from Customers -- CustomerID, CompanyName
+Select * from Orders -- OrderID
+
+Create View vw_selectcustomerorder
+Select c.customerId, c.companyname, o.orderID
+From Customers c
+Join orders o on c.CustomerID = O.CustomerID
+Where CompanyName = 'Around the Horn'
+
+--------------------------------------------------
+Use AdventureWorks2016
+Select CreditcardID, Cardtype, expmonth, expyear 
+From sales.creditcard -- while you are not showing CARDNUMBER
+
+-- Now lets create VIEW for it and we dont want user to see creditcard
+
+Create View vw_creditcard
+As 
+Select CreditcardID, cardType, expMonth, expYear 
+From Sales.Creditcard
+
+
+-- To view the table 
+
+Select * FROM vw_creditcard
+--------------------------------------------------------
+Select * from [HumanResources].[vEmployee]
+
+
+
+-- Temporary Table
+-------------------------------------------------------------------------------------------------------------
+-- To see Temporary table - System Database - tempdb - Tables
+-- Any time you create a temporary table, its created in tempdb  system database 
+-- Tempdb is valid within the session that it was created
+
+-- TYPES OF TEMPORARY TABLE
+-- LOCAL TEMPDB
+-- GLOBAL TEMPDB
+
+-- LOCAL TEMPDB -- Can only be run on same query editor where it was created
+-----------------------------------------------------------------
+Create table #Employee
+(EmpID int, EmpName varchar(50))
+
+Insert into #Employee values (1, 'Thomas'), (2, 'Mike')
+
+Select * from #Employee
+
+----------------------------------------------------
+
+Create Table #Student
+(StudentID int, StudentName varchar(50))
+
+Insert into #Student values (1, 'Anu'), (2, 'Mary')
+
+Select * from #Student
+
+
+-- GLOBAL TEMPDB -- Almost same as Local Tempdb but in GLOBAL TEMPDB  you can run it on any open queury editor
+---------------------------------------------------------------------
+Create Table ##City
+(CityID int, CityName varchar(50))
+
+Insert into ##City values (1, 'Berlin'), (2, 'Lagos'), (3, 'Miami'), (4, 'NYC')
+
+
+Select * from ##City
+
+
+-- TABLE VARIABLE
+--------------------------------------------------------------------
+Declare @TVstudent Table
+(TVstudentID int, TVstudentFname Varchar(50), TVstudentLname Varchar(50))
+Insert into @TVstudent values (1, 'John', 'Balabulu'), (2, 'Aminat', 'Malaga'), (3, 'Biggi', 'Manes'), (4, 'Thomas', 'paul')
+Select * from @TVstudent
+
+
+
+
+
+DECLARE @ListOWeekDays TABLE(DyNumber INT,DayAbb VARCHAR(40) , WeekName VARCHAR(40))
+ 
+INSERT INTO @ListOWeekDays
+VALUES 
+(1,'Mon','Monday')  ,
+(2,'Tue','Tuesday') ,
+(3,'Wed','Wednesday') ,
+(4,'Thu','Thursday'),
+(5,'Fri','Friday'),
+(6,'Sat','Saturday'),
+(7,'Sun','Sunday')	
+DELETE @ListOWeekDays WHERE DyNumber=1
+UPDATE @ListOWeekDays SET WeekName='Saturday is holiday'  WHERE DyNumber=6
+SELECT * FROM @ListOWeekDays
+
+-- Table variable do not regard Transaction
+Begin
+Begin Tran A
+Declare @MyTable_VAR Table
+(ID int, Name varchar(20))
+
+Insert Into @MyTable_VAR(ID, Name)
+Values
+(1, 'Ben'),
+(2, 'John')
+
+-- Before Rollback
+Select * from @MyTable_VAR
+
+ROLLBACK
+
+-- After Rollback
+Select * from @MyTable_VAR
+END
+
+-- TABLE VARIABLE -- Stored in TEMPDB and once the table execution finished the table is vanish(gone) from system database and it happen very a view seconds
+Declare @MyTable_VAR_2 Table
+(ID int, Name Varchar(20))
+Insert Into @MyTable_VAR_2 
+Values 
+(1, 'Ben'),
+(2, 'John'),
+(3, 'Momo'),
+(4, 'Adex')
+
+Select * from Tempdb.sys.tables -- To check whether it exist
+Select * from @MyTable_VAR_2
+Go
+
+Select * from Tempdb.sys.tables
+Go
+
+
+-- TABLE VARIABLE WITH CONSTRAINTS such as PRIMARY KEY, UNIQUE, CHECK, DEFAULT
+Declare @MyTable_VAR3 Table 
+(ID int PRIMARY KEY, 
+Name Varchar(30) UNIQUE,
+Education Varchar(30) CHECK(Education in ('Master', 'Bachelor')),
+Address Varchar(12) DEFAULT('N/A')
+)
+
+Insert Into @MyTable_VAR3(ID, Name, Education) 
+Values
+(1,  'A', 'Master'),
+(2,  'B', 'Bachelor'),
+(3,  'C', 'Master')
+
+Select * from Tempdb.sys.tables -- To check whether it exist
+Select * from @MyTable_VAR3
+Go
+
+Select * from Tempdb.sys.tables
+Go
+
+
+-- Select Into -> Use for copy everything into a new table by create new table
+-- Select into -> Limitation -> Does not copy the constraint but copy all the data
+Use NORTHWND
+Select  * from Customers
+
+-- SELECT INTO
+
+
+Select * into Customers_New from Customers
+
+Select  * from Customers
+
+Select  * from Customers_New
+
+----------------------------------------------------
+Select CustomerID, ContactName, Address into Customer_Few from Customers
+
+Select  * from Customer_Few 
+
+
+-- Class-17 => Pages - Extent - Indexes Clustered NonClustered - Logical Reads - Physical Reads - Fragmentation - Reorganize - Rebuild
+--------------------------------------------------------------------------------------------------------------------------------------
+
+-- Check Out 
+-- Funtions in SQL Server
+-- Subqueries in SQL Server
+-- Cursors in SQL Server
+
+/* Pages -> is a fixed-size unit of data storage that is used 
+to organize and manage data within a database. Size of a PAGE 
+is 8KB and can configure to be a different size
+
+*/
+/*
+TYPES OF PAGES
+
+1. Data Pages: These contain table or index data
+
+2. Index Pages: These contain index table
+
+3. Allocation Pages: These are used to manage the allocation of space within a database.
+
+4. Text/Image pages: these are used to store large object (LOB) data types such as text, image, and varchar(max).
+
+5. Global Allocation Map (GAM) pages: these are used to track free space at the database level.
+
+6. Shared Global Allocation Map (SGAM) pages: these are used to track the extent allocation status.
+
+7. Page Free Space (PFS) pages: these are used to track the free space available on data pages.
+*/
+
+/*
+Pages - are grouped into larger logical structures called EXTENTS,
+which are composed of eight (8) consecutive pages
+
+EXTENTS - Are used to efficiently allocate and manage the storage space for database objects
+*/ 
+
+-- INDEX
+------------------------------------------------------------------------------------------------------------
+-- TYPES OF INDEX
+-- CLUSTERED INDEX
+-- NON CLUSTERED
+-- COMPOSITE INDEX
+-- COVERED INDEX
+-- INDEX FRAGEMENTATION
+
+
+-- Indexes-Clustered-NonClustered
+-- Index - Allows us to retrieve data from the database in a fast and efficient manner.
+
+-- Clustered Index -> Re-organize the physical structure of a table based on the key column in the index definition
+-- Clustered Index ->  SYNTAX -> Create Index IndexName On TableName (Column) -- key column
+ 
+-- Non Clustered Index ->
+-- Non Clustered Index ->  SYNTAX -> Create NonClustered Index IndexName On TableName (Column) -- key column
+
+-- SET IO ON -- Give us more information about the way our data is running behind the scene
+Set statistics IO ON 
+--------------------------------------------------------------------------
+
+Select * from [dbo].[StudentsTable]
+--order by StudentID ASC
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'Lee'
+
+-- Lets give PRIMARY KEY to StudentID IN StudentTable BEFORE We need to add INT and also NOT NULL to the column 
+
+-- To add INT Datatype to a column StudentID
+Alter table StudentsTable 
+Alter column StudentID int
+
+-- To add INT and NOT NULL Datatype to a column StudentID
+Alter table StudentsTable 
+Alter column StudentID int not null
+
+-- To add PRIMARY KEY to a column StudentID
+Alter table StudentsTable 
+Add Constraint PK_Students Primary Key (StudentID)
+
+Select * from StudentsTable
+
+Set statistics IO ON -- Give us more information about the way our data is running behind the scene
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'Lee'
+
+-- If you craete Primary key on a table it will automaticaly create CLUSTER INDEX
+
+-- EXECUTION PLAN - It generate execution plan base on STATISTICS
+-- Estimated Executed Plan - 
+-- Actual Executed Plan
+
+-- Activate -- DISPLAY ESTIMATED EXCUTION PLAN - By click the button 
+-- Delete the Primary key in the INDEX under the TABLE and execute the below query it will show the cost of the table scan
+
+Select * from StudentsTable
+
+-- HEAP TABLE: Is any table without a clustered index and because of that SQL Server do Table Scan 
+-- To Fix Heap Table: By introduce PRIMARY KEY
+
+
+-- TO EMPTY THE CACHE -- https://learn.microsoft.com/en-us/sql/t-sql/database-console-commands/dbcc-freeproccache-transact-sql?view=sql-server-ver16
+-- DBCC FREEPROCCACHE (Transact-SQL) -- Delete all cache history
+DBCC FREEPROCCACHE
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'Lee'
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where StudentID = 6000
+
+-- CREATE CLUSTER INDEX --NOTE! You can not create more than one Clustered index in a table
+-- CI_StudentID - Is just a name can be anything
+
+Create Clustered index CI_StudentID
+ON StudentsTable (StudentID)
+
+-- Run This Query BEFORE creating: Create Clustered index
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where StudentID = 7500
+
+--  BEFORE creating: Create Clustered index -- Table 'StudentsTable'. Scan count 1, logical reads 3, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.
+-- As you can see now -- We have reduce the cost of reading
+
+Create Clustered index CI_StudentID
+ON StudentsTable (StudentID)
+
+-- Before will creating Create Clustered index the output was -  Messages - Scan count 3, logical reads 6084 
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where StudentID = 7500
+
+
+-- CLUSTERED INDEX SEEK: SEEK operation is the best operation sql server goes directly to what is looking for and there is no running around that is why the LOGICAL READS before was 6084 looking for the query and after introducing CLUSTERED INDEX the LOGICAL READS reduces to 3
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+-- To Create NON CLUSTERED INDEX
+Create NonClustered Index NCI_Fname
+ON dbo.StudentsTable  (Fname)
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+--  NON CLUSTERED INDEX -- Table 'StudentsTable'. Scan count 1, logical reads 2155, physical reads 0, read-ahead reads 0, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.
+
+-- Now lets create NON CLUSTERED INDEX on Lname, PhoneNo
+
+Create NonClustered Index NCI_Lname
+ON dbo.StudentsTable  (Lname)
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+
+Create NonClustered Index NCI_PhoneNo
+ON dbo.StudentsTable  (PhoneNo)
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+-- Missing Index Details from ~vsB158.sql - SQL01.USA_DB (SQL\Administrator (60))The Query Processor estimates that implementing the following index could improve the query cost by 99.5872%.
+/*
+USE [USA_DB]
+GO
+CREATE NONCLUSTERED INDEX [<Name of Missing Index, sysname,>]
+ON [dbo].[StudentsTable] ([Fname])
+INCLUDE ([StudentID],[Lname],[PhoneNo])
+GO
+*/
+
+-- When you are looking at Execution plan this are what you are going to see 
+-- 1. TABLE SCAN
+-- 2. INDEX SCAN - Telling us there is INDEX on the table if it satify the qeury or not i.e DOING A LOTS OF LOGICAL READS
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname Like '%ohn'
+-- 3. KEY LOOKUP
+-- 4. RID LOOKUP
+
+-- showing up in your Execution Plan it means 
+-- It saying you have index on the table but the index is not sufficien to fulfil/sufficient the requirement of the query...
+-- SOLUTION - So you want to look at the OUTPUT List and take advantage of the INCLUDE statement to include the columns that are missing to an existing Index 
+
+-- And you also see 
+-- 5. HASH
+-- 6. MERGE
+-- 7. SORT
+
+CREATE NONCLUSTERED INDEX [NCI_Fname_Include]
+ON [dbo].[StudentsTable] ([Fname])
+INCLUDE ([StudentID],[Lname],[PhoneNo])
+
+-- NOW YOU HAVE COVERED INDEX - MEANS index that have INCLUDED COLUMS
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'John'
+
+-- NOW -- LOGICAL READS -- Table 'StudentsTable'. Scan count 1, logical reads 8, 
+
+-- COMPOSITE INDEX -- is when you  add or have more than one Table Column to the INDEX KEY COLUMS 
+-- Steps -- Open INDEXES - Right click on the one that has no INCLUDED Index - Properties - click ADD - select anyone you want add - Ok 
+
+-- Abbrevating
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname Like '%ohn'
+
+-- This is Composite Index
+CREATE NONCLUSTERED INDEX [NCI_Comp_Included]
+ON [dbo].[StudentsTable] (Fname, Lname) 
+
+-- This is Covered Index
+CREATE NONCLUSTERED INDEX [NCI_Cov_Included]
+ON [dbo].[StudentsTable] (Fname)
+INCLUDE (Lname, Gender)
+
+-- Last Class SQL-CLASS-16
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname Like '%hn' -- Index Scan [Non Clustered] Bcos of > LIKE %
+
+-- %hn MEANS - ENDING WITH hn
+-- hn% MEANS - START WITH hn
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname Like 'John' -- Index Seek [Non Clustered]
+
+-- READING EXECUTION such as COST EXECUTION PLAN -- Always from Right to LETF and TOP to DOWN
+-- INDEX SCAN -- READING LINE BY LINE to avoid INDEX SCAN to have INDEX SEEK we  need to create CLUSTERED INDEX base on the TABLE COLUMN
+
+
+-- INDEX FRAGEMNENTATION -- When you are using index during, our DML(Data Manipulation Language) used for RETRIEVAL and MANIPULATION activities (Select, Insert, Update, Delete) 
+-- Other TYPES OF SQL COMMANDS
+-- (DDL - Create, Alter, Drop, Truncate, Rename)
+-- (DCL - Grant, Revoke)
+-- (TCL - Commit, Rollback, SavePrint)
+
+-- INTERVIEW 
+-- Tell me the difference btw the CLUSTERED and NON CLUSTERED INDEX
+-- What is COMPOSITE INDEX -- is an index with an index of more than one column and is good for covering searches and lookups like WHERE clause and Joins
+
+
+-- INDEX FRAGEMNENTATION - Occurs when the data pages in indexes are logically disordered, loosely filled, or overfilled
+
+-- DE-FRAGEMENT INDEXES - Arrange index back (the process is called OPTIMIZATION and best time is OFF PRODUCTION HOUR)
+-- PRODUCTION HOUR -- Is a Active hour of your business
+
+-- When FRAGEMNENTATION is... 
+-- 1. 5 less than 30 -- Reorganize - Light Activity
+-- 2. Above 30 -- Rebuild - Expensive, Heavy clean up 
+-- During REBUILD sql server will drop existing index and re-create it 
+
+-- How to check the LEVEL of our INDEX -- Open - Index under the Database-Right click on the Index and click - REORGANIZE OR REBUILD
+
+-- Simulate FRAGEMENTATION
+-- Right the on the Database- Task- Shrink- Database-Ok -- It will Shrink the Database
+
+-- TO REBUILD OR REORGANIZE
+-- Go to the INDEXES under the TABLE in the Database-Right click on the INDEXES to see the LEVEL of the Frangementation
+-- Now to REBUILD OR REORGANIZE -- Right click on the Index - Click REBUILD or REORGANIZE depend on what you to do- If you click  on SCRIPT - It will run the QUERY on another query editor - click - OK. SAME PROCESS FOR REORGANIZE
+
+-- The OPTIMAL way to check Index Fragementation NO EDITING ON THE SCRIPT
+SELECT S.name as 'Schema',
+T.name as 'Table',
+I.name as 'Index',
+DDIPS.avg_fragmentation_in_percent,
+DDIPS.page_count
+FROM sys.dm_db_index_physical_stats (DB_ID(), NULL, NULL, NULL, NULL) AS DDIPS
+INNER JOIN sys.tables T on T.object_id = DDIPS.object_id
+INNER JOIN sys.schemas S on T.schema_id = S.schema_id
+INNER JOIN sys.indexes I ON I.object_id = DDIPS.object_id
+AND DDIPS.index_id = I.index_id
+WHERE DDIPS.database_id = DB_ID()
+and I.name is not null
+AND DDIPS.avg_fragmentation_in_percent > 0
+ORDER BY DDIPS.avg_fragmentation_in_percent desc
+
+
+-- TO -- REBUILD
+
+ALTER INDEX [CI_StudentID] ON StudentsTable REBUILD
+
+-- TO -- REORGANIZE
+
+ALTER INDEX NCI_Fname ON StudentsTable REORGANIZE
+
+-- AUTOMATED MAINTENANCE PLAN
+-- 1. Automated Backups
+-- 2. Index Optimization
+-- 3. Statistics Update
+-- 4. Database Integrity Check
+
+-- DBCC Check Database Integrity -- Once Every week -- To check Database corruption -- is also Expensive Operation is best to do during OFF PRODUCTION HOUR -- RESTORE IT FROM LAST FULL BACKUP
+
+-- When you guys do INDEX OPTIMIZATION?
+
+-- SCHEDULED MAINTENANCE PLAN (AUTOMATED)
+-- Right click on the Maintenance Plans - Maintenance Plan Wizard - Next - Name(SQL_Maintenance) - Click - Change (To schedule the Time) - ...... After all done -- Change the name to the correnspondently to their Features instead of SUBPLAN 1... > Under SQL SERVER AGENT - JOBS - Right click on each plan - Property - click - Schedule - Copy the name - Click - General - Paste the name -- Click OK same for the 4 Job.... To delete MAINTENANCE PLAN - Management-Maintenance Plan-Right click on the plan there-Click- DELETE-OK
+
+
+-- Best way of doing AUTOMATED MAINTENANCE PLAN
+
+Set statistics IO ON
+
+Select StudentID,  Fname, Lname, PhoneNo from StudentsTable
+Where Fname Like 'John'
+
+-- Popular Schedule
+-- 1. FullBackup every Sunday 12am
+-- 2. Differential Every Day 12am
+-- 3. T.Log Every 15mins
+
+-- 1. Full Backup Every day
+-- 2. T.Log Backup 15 mins
+
+-- DBCC checkDB (Database Integrity Check) -- Once Every Week -- its expensive 
+-- DBCC System Database - Database Integrity Check -- Every Saturday -- 2am
+-- DBCC Main User Database - Database Integrity Check - USER_DATABASES -- Every Saturday -- 2am
+-- Index Optimization - IndexOptimize - USER_DATABASES - Every Daily -- Like 1am or 3am
+
+
+-- Backup Talks
+-- SYSTEM DATABASE -- Daily at 9pm
+-- Master
+-- Model
+-- MSDB
+-- TempDB -- We do not Backup - It recreate  every time we start the server once you restart your server everything is gone
+
+
+
+-- Delete all the Jobs From Ola Hallengren -- Click the Jobs(as in Selected) -- then Click - View (at top) - Click - Object Explorer Details - New Query Editor will open - Then you can select all the Jobs at once BUT dont select SYSPOLICY_PURGE_HISTORY - Right click - DELETE - OK 
+
+-- Now use Ola Hallengren Script and also for the Scheduling
+-- That is all about the Ola Hallengren Job schedule
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Topics
+-- Tables
+-- TSQL
+-- Index
+-- Performing Tuning -- The 3 headline above will leads us to Performing Tuning
+
+-- Using - AdventureWorks2016 - 
+
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [BusinessEntityID]
+      ,[DepartmentID]
+      ,[ShiftID]
+      ,[StartDate]
+      ,[EndDate]
+      ,[ModifiedDate]
+FROM [AdventureWorks2016].[HumanResources].[EmployeeDepartmentHistory]
+
+Select * From HumanResources.EmployeeDepartmentHistory
+
+
+Create Database TableIndexDB -- This database will follow MODELDB structure
+
+-- T-SQL-DataType
+-- https://www.youtube.com/watch?v=yCYF3SKd4ko
+-- https://www.youtube.com/watch?v=AaHCzkWOQ2c
+
+Use TableIndexDB
+-- Lets create Table 
+Create Table Employee
+(EmpID int, EmpFname varchar(50), EmpLname varchar(50), Phone int, Email Varchar(50))
+
+-- HOW TO CREATE SCHEMA
+Create Schema Sales
+
+-- Lets create Table
+Create Table Sales.Person
+(EmpID int, EmpFname varchar(50), EmpLname varchar(50), Phone int, Email Varchar(50))
+
+-- To see all SCHEMA in the Database
+--https://dataedo.com/kb/query/sql-server/list-schemas-in-database
+-- Method1
+SELECT * FROM INFORMATION_SCHEMA.SCHEMATA 
+-- Method2
+SELECT * FROM sys.schemas
+-- Method3
+select s.name as schema_name, 
+    s.schema_id,
+    u.name as schema_owner
+from sys.schemas s
+    inner join sys.sysusers u
+        on u.uid = s.principal_id
+order by s.name
+
+
+-- Create Schema
+Create Schema Sales
+
+-- Lets create Table
+Create Table Sales.Person
+(EmpID int, EmpFname varchar(50), EmpLname varchar(50), Phone int, Email Varchar(50))
+
+
+-- To MODIFY/ALTER Table
+Alter Table [dbo].[Employee]
+Alter Column EmpFname varchar(50)
+
+
+-- INDEX FRAGEMNENTATION -- When you are using index during, our DML(Data Manipulation Language) used for RETRIEVAL and MANIPULATION activities (Select, Insert, Update, Delete) 
+-- (DML - Select, Insert, Update, Delete)
+-- (DDL - Create, Alter, Drop, Truncate, Rename)
+-- (DCL - Grant, Revoke)
+-- (TCL - Commit, Rollback, SavePrint)
+
+-- Lets create Table
+Create Table Students
+(EmpID int, Fname varchar(50), Lname varchar(50), PhoneNumber int, Email Varchar(50))
+
+-- INSERT VALUES INTO A TABLE
+Insert Into Students 
+(EmpID, Fname, Lname, PhoneNumber, Email)
+Values (101, 'Mike', 'Tina', 12353674, 'mike@gmail.com')
+
+Select * from Students
+
+Insert Into Students 
+(EmpID, Fname, Lname, PhoneNumber)
+Values (102, 'Shina', 'Peter', 12353674)
+
+-- Update Column
+Update Students
+Set Email = 'Shina@gmail.com'
+Where Fname = 'Shina'
+
+Select * from Students
+
+-- PRIMARY KEY CONSTRAINT  
+-- PhoneNumber nvarchar(25)
+Create Table EmployeePK
+(EmpID int Not Null Primary Key, Fname varchar(50), Lname varchar(50), PhoneNumber int, Email Varchar(50))
+
+--Drop table EmployeePK
+
+-- INSERT VALUES INTO A TABLE
+Insert Into EmployeePK
+Values (101, 'Mike', 'Tina', 12353674, 'mike@gmail.com')
+
+Use TableIndexDB
+Select * from EmployeePK
+
+Insert Into EmployeePK
+Values (102, 'Alicia', 'Keys', 12353674, 'mike@gmail.com')
+
+
+
+/*
+
+
+Select * from [dbo].[StudentsTable]
+--order by StudentID ASC
+
+Select Fname, Lname, PhoneNo from StudentsTable
+Where Fname = 'Lee'
+
+-- Lets give PRIMARY KEY to StudentID IN StudentTable
+
+Select * from StudentsTable
+
+*/
+
+-- STEPS TO ADD PRIMARY KEY TO ALREADY TABLE COLUMN WITHOUT PRIMARY KEY 
+-- To add INT Datatype to a column StudentID
+Alter table EmployeePK 
+Alter column EmpID int
+
+-- To add INT and NOT NULL Datatype to a column StudentID
+Alter table EmployeePK 
+Alter column EmpID int not null
+
+-- To add PRIMARY KEY to a column StudentID
+Alter table EmployeePK 
+Add Constraint PK_Employee Primary Key (EmpID)
+
+
+-- PRIMARY KEY AND FOREIGN KEY CONSTRAINT
+-- PRIMARY KEY
+/*
+PRIMARY KEYS (PK) is a column or a group of columns that uniquely identifies each row in a table and each table can contain only one PRIMARY KEY
+
+All columns that participate in the PRIMARY KEY must be defined as NOT NULL.
+
+INDEX = An index contains keys built from one or more columns in the table or view (virtual table). These keys are stored in a structure that enables SQL Server to find the row or rows associated with the key values quickly and efficiently.
+
+CLUSTERED INDEXES = Defines the holder in which data is physically store in a table
+
+CLUSTERED INDEXES sort and store the data rows in the table or view based on their key values.
+
+NONCLUSTERED INDEX => Does not sort the physical data inside the table column NON CLUSTERED INDEX => contains the nonclustered index key values and each key value entry has a pointer to the data row that contains the key value and does not sort the data in the table column
+
+UNIQUE CONSTRAINT => Allows you to ensures that the data stored in a column, or a group of columns, is unique among the rows in a table.
+
+FOREIGN KEY is a field (or collection of fields) in one table that refers to the PRIMARY KEY in another table - The TABLE containing the FOREIGN KEY is called the CHILD TABLE, and the table containing the CANDIDATE KEY is called REFERENCED OR PARENT TABLE.
+
+A FOREIGN KEY is a key basically used to link two tables together.
+
+i.e We are able to reference data from another column in another table with FOREIGN KEYS.
+
+CREATING RELATIONSHIP BETWEEN TWO TABLES
+First we need to formalize the relationship between the tables so that it can be recognize by the database engine this will enables SQL Server to follow the tread between the tables so that w don't have to manually look up to the values from one table to another table, the relationship is established on the FOREIGN KEY side of the relationship
+*/
+
+
+Create Table PersonsTable
+(PersonID int not null Primary key, FirstName varchar(50), LastName varchar(50), Age int)
+
+Insert into PersonsTable
+Values 
+(1, 'Hansen', 'Ola', 30),
+(2, 'Sven', 'Termily', 23),
+(3, 'Peter', 'Kari', 20);
+
+Select * from PersonsTable
+
+-- FOREIGN KEY CONSTRAINT
+Create Table Orders
+(OrderID int not null Primary key, OrderNumber int not null, PersonID int Foreign key references PersonsTable(PersonID));
+
+Insert into Orders
+Values 
+(1, 77895, 3),
+(2, 44678, 3),
+(3, 22456, 2),
+(4, 24562, 1);
+
+Select * from PersonsTable
+Select * from Orders
+
+Insert into Orders
+Values
+(1, 77895, 4) -- Not going to accept - Violation of PRIMARY KEY constraint 'PK__Orders__C3905BAF04DA73DE' and The duplicate key value is (1)
+
+Insert into PersonsTable
+Values
+(4, 'Jim', 'Bake', 40),
+(5, 'Bubu', 'President', 50);
+
+
+Insert into Orders
+Values
+(5, 77895, 5) -- Not going to accept - Violation of PRIMARY KEY constraint 'PK__Orders__C3905BAF04DA73DE' and The duplicate key value is (1)
+
+Insert into Orders
+Values
+(6, 97895, 7)  -- The INSERT statement conflicted with the FOREIGN KEY constraint "FK__Orders__PersonID__38996AB5". The conflict occurred in database "TableIndexDB", table "dbo.PersonsTable", column 'PersonID'.
+
+
+Insert into Orders
+Values
+(7, 87895, 5)
+
+Select * from Orders
+
+DELETE FROM Orders
+WHERE OrderID = 7
+
+Alter Table Orders
+Add Unique OrderNumber
+
+
+
+---------------------------------------------------------------------
+
+-- Lets create a table name RESULT with 3 column -> StudentID, StudentName and Result
+
+ Create database IndexResultDB
+
+ Create table Result
+ (StudentID int, StudentName Varchar(30), Result int)
+
+ Insert into Result
+ Values
+ (1, 'James', 82),
+ (3, 'Udo', 76),
+ (2, 'Max', 89),
+ (5, 'John', 94),
+ (4, 'Hammed', 99)
+
+ Select * from Result
+
+ Use IndexResultDB
+ Create Clustered Index Idx_results
+ on Result (StudentName)
+
+ Select * from Result
+
+-- B tree structure
+
+-- You can only organize the table based on one column at a time -- that is why you can only have one clustered indexon a table
+
+-- Create another CLUSTERED INDEX
+Create Clustered index CI_Result1
+on Result (StudentID)
+
+-- Cannot create more than one clustered index on table 'Result'. Drop the existing clustered index 'Idx_results' before creating another.
+
+-- Droping the existing CLUSTERED INDEX
+Drop index [Idx_results] on Result
+
+
+-- Create another CLUSTERED INDEX
+Create Clustered index CI_Result1
+on Result (StudentID)
+
+-- Create another Table called Result1
+
+ Use IndexResultDB
+ Create table Result1
+ (StudentID int primary key, StudentName Varchar(30), Result int)
+
+ Insert into Result1
+ Values
+ (1, 'James', 82),
+ (3, 'Udo', 76),
+ (2, 'Max', 89),
+ (5, 'John', 94),
+ (4, 'Hammed', 99)
+
+ Select * from Result1
+
+-- When you create a primary key, it automatically create a clustered index
+
+-- NON CLUSTERED INDEX 
+-- Is a pointer to the location of the data within the table.
+-- it is not the actual data, a clustered index will consume more space because it is writting on additional pages with the Database
+
+ Create Database NonCI_DB
+ 
+ Use NonCI_DB
+ Create table NonCl_Table
+ (StudentID int, StudentName Varchar(30), Result int)
+
+ Insert into NonCl_Table
+ Values
+ (1, 'James', 82),
+ (3, 'Udo', 76),
+ (2, 'Max', 89),
+ (5, 'John', 94),
+ (4, 'Hammed', 99)
+
+ Select * from NonCl_Table
+
+ -- Create Non Clustered Index
+ Create NonClustered index adx_studentname
+ on NonCl_Table (StudentName)
+
+ Select * from NonCl_Table
+
+ /*
+ -- Drop Primary Key
+ ALTER TABLE Result2
+ DROP CONSTRAINT [PK__Result2__32C52A79B83705A8]
+
+ -- Drop Non Clustered Index
+ DROP INDEX [adx_studentname] ON Result2;
+
+ -- Rename TABLE Name
+ sp_rename 'Result2', 'Result';
+
+ -- Drop table
+ Drop Table Result
+
+ */
+
+
+ -- Create another Table 
+ -- Using GUI to create Non Clustered Index
+
+ Use NonCI_DB
+ Create table NonCl_Table2
+ (StudentID int, StudentName Varchar(30), Result int)
+
+ Insert into NonCl_Table2
+ Values
+ (1, 'James', 82),
+ (3, 'Udo', 76),
+ (2, 'Max', 89),
+ (5, 'John', 94),
+ (4, 'Hammed', 99)
+
+ Select * from NonCl_Table2
+
+ -- Using GUI to create Non Clustered Index
+
+ -- Right click on the Indexes under the table Name - New Index - Select - Clustered Index or Non Clustered Index depend which one you want to create - Name the Index - Click - Add- to add the column - Ok
+
+-- OTHER TYPE OF INDEX
+---------------------------------------------------------------
+/*
+COMPOSITE INDEX - is an index that includes multiple columns from a table.
+This type of index can be useful for improving query performance when a 
+query involves conditions on multiple columns.
+
+It's important to note that while composite indexes can be useful for improving 
+query performance, they can also have downsides such as increased storage space 
+and slower insert/update/delete operations. It's important to carefully consider 
+the tradeoffs before creating composite indexes on your tables.
+
+CREATE INDEX idx_customers_name_city ON customers (last_name, first_name, city);
+
+*/
+
+
+
+Use IndexResultDB
+Create table compositIndexDB
+(StudentID int, StudentName Varchar(30), Result int)
+
+ Insert into compositIndexDB
+ Values
+ (1, 'James', 82),
+ (3, 'Udo', 76),
+ (2, 'Max', 89),
+ (5, 'John', 94),
+ (4, 'Hammed', 99)
+
+ Select * from compositIndexDB
+
+
+/*
+COVERED INDEX - Is a type of index that includes all the columns required to 
+satisfy a query, without the need to reference the underlying table.
+This means that the index "covers" the query and provides all the necessary data.
+without having to go back to the table itself
+
+SELECT OrderID, OrderDate FROM Orders WHERE CustomerID = 1234;
+
+CREATE INDEX idx_orders_customerid ON Orders (CustomerID) INCLUDE (OrderID, OrderDate);
+
+It's important to note that covered indexes can improve query performance, but they 
+can also have downsides such as increased storage space and slower insert/update/delete 
+operations. As such, it's important to carefully consider the tradeoffs before creating 
+covered indexes on your tables.
+*/
+
+
+Select StudentID, StudentName, Result
+from compositIndexDB
+
+
+Create NonClustered index idx_NonCindex2
+on compositIndexDB (StudentID, Result)
+
+Create NonClustered index idx_NonCindex3
+on compositIndexDB (StudentName) Include (StudentID, Result)
+
+
+-- FRAGMENTATION - REORGANIZE - REBUILD
+-------------------------------------------------------------------------------
+-- TABLE SCAN - Costly operation
+
+/*
+Table Scan - Costly Operation
+* Index will speed up your select statement
+* And it can slow down your insert, update and delete. - Most especially in the case of Non Clustered Index
+
+Disadvantage of Index
+• Increased storage space - Indexes require additional storage space to store index data which can increase overall size of the database.
+• Slower Data Modification - When you modify data in a table that has one or more indexes, the database must updatethe indexes to reflect the changes. 
+- This can slow down INSERT, UPDATE AND  DELETE operations, especially if the table has many indexes
+• Index Fragmentation - Over time, index data can become fragmented and scattered across the storage space which can slow down query performance
+- DML activities such as INSERT, UPDATES, DELETES can cause index fragmentation. We have to DEFRAGMENT 
+- To address this, you may need to periodically REBUILD or REORGANIZE your indexes, which can be a resource-intensive process
+- REORGANIZE (fragmented 5 - 29% -- Reorganize): This is a lite operation, is only reorganize the leaf level index and can be done  online
+- REBUILD: (30% and above -- Rebuild): This is heavy operation: This will drop the existing index and recreate it: This can be done either online or offline depending on the edition of SQL Server that you are running (If you are running ENTERPRISE EDITION  you can doonline rebuild BUT if you are using STANDARD EDITION you can only do offline rebuild) If done offline it will block users attempting to access the table
+• Query Plan Optimization - SQL Server uses a cost based query optimizer to choose the most efficient executionplan for a given query
+• Outdated Statistics -
+*/
+
+SET STATISTICS IO ON 
+-- How does SQL Server gather the estimate plan and actual plan - SQL Server uses STATISTICS to gather the infomation 
+-- Gives more infomation on any query will execute on the window will run the query
+-- WITH IO ON
+Use AdventureWorks2016
+Set statistics IO ON
+
+Use AdventureWorks2016
+Select * from Person.Person
+-- Messages -- Table 'Person'. Scan count 1, logical reads 3819, physical reads 3, read-ahead reads 3857, lob logical reads 0, lob physical reads 0, lob read-ahead reads 0.
+
+-- EXECUTION PLAN
+-- Actual Execution Plan
+-- Estimated Execution Plan
+
+Use AdventureWorks2016
+Select * from Person.Person
+
+
+-- Lets move Table Person.Person to another new table
+-- If you move table from one table to another it would not move the constraint
+Select * into Person from Person.Person
+
+Select * from Person
+
+
+Select BusinessEntityID, FirstName, LastName from Person -- logical reads 3808
+
+Create clustered Index idx_bus 
+On Person (BusinessEntityID)
+
+Select BusinessEntityID, FirstName, LastName from Person -- logical reads 3816
+
+
+Select BusinessEntityID, FirstName, LastName from Person -- logical reads 4
+Where BusinessEntityID = 70
+-- Now lets delete the INDEX will created
+USE [AdventureWorks2016]
+GO
+DROP INDEX [idx_bus] ON [dbo].[Person] WITH ( ONLINE = OFF )
+GO
+
+-- Lets run this query
+
+DBCC Freeproccache -- DROP EVERYTHING IN THE MEMORY
+
+Select BusinessEntityID, FirstName, LastName from Person 
+Where BusinessEntityID = 70 -- logical reads 3807
+
+Create clustered Index idx_bus 
+On Person (BusinessEntityID)
+
+-- Logical reads after index is 4
+Select BusinessEntityID, FirstName, LastName from Person 
+Where BusinessEntityID = 70 -- logical reads 4,
+
+-- Another example
+Select BusinessEntityID, FirstName, LastName from Person 
+Where FirstName = 'John' -- logical reads 3816
+
+
+Create index idx_fname on Person (Firstname)
+
+Select BusinessEntityID, FirstName, LastName from Person 
+Where FirstName = 'John' -- logical reads 188
+
+
+-- CLASS => 18
+-- Indexes - Clustered-NonClustered - Fragmentatn - Reorganizatn - Rebuild - Ola Hallengren - Executn Plan - Waits Stats Paul-TroubleShootng - BrentOzarTool
+--------------------------------------------------------------------------------------------------------------------------------------
+Use AdventureWorks2016
+
+-- Copy all data from table Person.Person in AdventureWorks2016 to new table called Employee BUT without the Index or Constraint
+Select * into Employee from person.person
+
+Select * from Employee
+
+Set statistics io on -- To get more information on Logical Reads and Physical Reads
+
+DBCC Freeproccache -- To clear all the information store in memory buffer cache in sql server
+-- RESTART -- And it works same as (DBCC Freeproccache) - When you RESTART your Sql Server Services bcos it also delete all the Cache memory
+
+--  App  --  Memory Buffer(Buffer cache)        --  Disk
+--  App  --  Logical Reads                      --  Physical Reads
+--  App  --  Less Expensive (More Faster)       --  More Expensive
+
+-- PLE -- Page Life Expentancy - How long the data stay in the memory the longer it stay in the memory the better its for us bcos it can fetch the information easily
+
+-- Table Scan is when SQL server reads row by row to get the information requested fro the record or the data
+Select BusinessEntityID, FirstName, LastName from Employee -- The OPERATION is Table Scan, Cost 100% -- logical reads 3808,
+
+-- Before Index -- Table Scan
+-- Table Scan - Is not the efficient way to run a query
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- logical reads 3808,
+
+Create Clustered Index idx_businessEntity on Employee (BusinessEntityID)
+
+-- After Index
+Select * from Employee
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- logical reads 3816,
+-- Clustered Index Scan
+
+Select BusinessEntityID from Employee
+Where BusinessEntityID = 3500 -- logical reads 4, -- Clustered Index Seek (Fast Operation)
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 3500 -- logical reads 4, -- Clustered Index Seek (Fast Operation)
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- logical reads 3816,
+
+
+-- Lets create NON CLUSTERED INDEX to see the effect of INDEX
+Create NonClustered Index idx_firstName on Employee(FirstName)
+
+-- With Index in the entry BusinessEntityID, FirstName 
+Select BusinessEntityID, FirstName, LastName from Employee -- logical reads 188, physical reads 0
+Where FirstName = 'John' -- logical reads 188, INDEX SEEK(NonClustered) - Cost 2% -- KEY LOOKUP(Clustered) - 98%
+
+-- In other to improve the query result faster then w need to also give LASTNAME index(Non Clustered Index)
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John'
+
+-- If LASTNAME is our clause (where) then w can create INDEX but since our LASTNAME is on the SELECT column its better to use INCLUDE to the LASTNAME which w leads us to COVERED INDEX 
+
+
+
+CREATE NONCLUSTERED INDEX [idx_firstName] ON [dbo].[Employee]
+(
+	[FirstName] ASC
+)
+INCLUDE([LastName]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = ON, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+-- After w INCLUDE lastname to Firstname  using GUI
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' --Operation is -> Index Seek(Non Clustered), Cost is 100%
+
+
+-- Lets Drop the CLUSTERED INDEX --  [idx_businessEntity]
+Drop index [idx_businessEntity] on Employee
+
+-- After w drop CLUSTERED INDEX
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- logical reads 61, physical reads 0
+
+-- RID Lookup -- Row identifer looking for businessEntity and if w created CLUSTERD INDEX it can help 
+-- Execution Plan -- We are doing RID Lookup (Heap)
+-- RID -- Retrovirus Integration Database (RID)
+
+-- Heap: A table without a clustered index, it can have NON CLUSTERED INDEX means a table that is not really organize
+
+-- Lets try and see if Non Clustered Index can help first 
+Create NonClustered Index idx_BusinesEntity 
+on Employee (BusinessEntityID)
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- Still doing RID Lookup looking for BUSINESSENTITY
+
+-- Now lets add INCLUDE BUSINESSENTITY using GUI scrpts
+
+CREATE NONCLUSTERED INDEX [idx_firstName] ON [dbo].[Employee]
+(
+	[FirstName] ASC
+)
+INCLUDE([LastName],[BusinessEntityID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = ON, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+-- After INCLUDE businessentity in the Firstname 
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John' -- logical reads 2, - OPERATION is - INDEX SEEK, Cost 100%
+
+
+-- Again lets REMOVE the BUSINESSENTITY that w INCLUDED using GUI
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- logical reads 3
+-- Still doing RID lookup
+-- output -- Need - Firstname and Lastname
+
+-- Now lets INCLUDE - (add)  Firstname and Lastname on the BUSINESSENTITY non clustered index 
+-- Using GUI
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- logical reads 2 -- Operation is INDEX SEEK, Cost 100%
+-- it create additional PAGES bcos w have Firstname and Lastname in 4 places 
+
+-- Now lets DELETE the [idx_BusinesEntity] Non Clustered Index using GUI
+-- After DELETE
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- 
+
+/*
+Missing Index Details from SQL_Last_Query.sql - SQL01.AdventureWorks2016 (SQL\Administrator (59))
+The Query Processor estimates that implementing the following index could improve the query cost by 99.8646%.
+*/
+
+/*
+USE [AdventureWorks2016]
+GO
+CREATE NONCLUSTERED INDEX [<Name of Missing Index, sysname,>]
+ON [dbo].[Employee] ([BusinessEntityID])
+
+GO
+*/
+-- It recommended NON CLUSTERED
+CREATE NONCLUSTERED INDEX idx_BusssEntity
+ON [dbo].[Employee] ([BusinessEntityID])
+
+-- Áfter created missing index
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- RID Lookup Firstname and Lastname
+
+-- So NON CLUSTERED INDEX is not helping
+-- Lets DELETE the missing index w created
+-- Right click on it and DELETE
+
+-- Lets create Clustered Index - It really need CLUSTERED INDEX
+Create Clustered Index idx_BusinesEntity 
+on Employee (BusinessEntityID)
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- Clustered Index Seek
+
+
+-- Indexes -- Help us to improve our query also improve the performance of our query in an effecient manner
+
+
+/*
+- After adding up all cost it has to made up 100% so w need to check which one has HIGHER cost and fix it 
+
+- When looking at EXECUTION PLAN look at the OBJECT and OUTPUT
+- When you dealing with issues around 
+- TABLE SCAN -- SQL Server is doing row by row which is not really good
+- KEYLOOK UP & RID LOOKUP -- some of the column w can find it on the index but some can not be able to find in the index so in that situation sql server can be doing KEYLOOK UP or doing RID Lookup, in the case of KEYLOOP UP it will be using CLUSTERED INDEX and in the case of RID LOOKUP that is not the case of CLUSTERED INDEX on that table, the most important in this,is that some of the column are not in the index and SQL Server is going to do KEYLOOK UP so the one it find the index can be retrive fast and the one does not find the index it will take time and that is main thing about keylook up and RID lookup
+
+- Base on all the scenario above the Best solution is to Create CLUSTERED INDEX or INDEXES
+
+-- HOW DO YOU TROUBLESHOOT SLOW RUNNING QUERY - The first thing I will look at is Execution Plan for that query w can look at either the ESTIMATED PLAN or ACTUAL EXECUTION PLAN and when i pull up Execution plan I want to look at the COST and the OPERATION that is happening around the execution plan so for example if am seen TABLE SCAN is an indication that SQL Server is doing ROW by ROW scan of the record which is not efficient and i need to create CLUSTERED INDEX to fix that particular table in some cases I can see KEYLOOK UP or RID LOOKUP in this situation it says that some of the column can be find in the index while some can not be find in the index so for those column that can not be find in the index and i need to create additional index or introduce INCLUDE statement so I can take care of the column that are missing 
+70 to 80% is to introduce index to solve slow running query in SQL Server
+*/
+
+-- https://blog.quest.com/how-to-read-and-analyze-sql-server-execution-plans/
+
+Set statistics io on
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where BusinessEntityID = 4500 -- Clustered Index Seek
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'Mary' -- Clustered Index Seek
+
+
+/*
+t sql to show fragmentation level sql server including schema
+SELECT 
+    dbschemas.[name] as 'Schema',
+    dbtables.[name] as 'Table',
+    dbindexes.[name] as 'Index',
+    indexstats.avg_fragmentation_in_percent,
+    indexstats.page_count
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, NULL) AS indexstats
+INNER JOIN sys.tables dbtables on dbtables.[object_id] = indexstats.[object_id]
+INNER JOIN sys.schemas dbschemas on dbtables.[schema_id] = dbschemas.[schema_id]
+INNER JOIN sys.indexes AS dbindexes ON dbindexes.[object_id] = indexstats.[object_id]
+    AND indexstats.index_id = dbindexes.index_id
+WHERE indexstats.database_id = DB_ID()
+ORDER BY indexstats.avg_fragmentation_in_percent DESC;
+*/
+
+-- To REBUILD 
+-- ALTER INDEX IX_Employee_LastName ON Employees REBUILD;
+
+
+ALTER INDEX  [idx_BusinesEntity] ON Employees
+REBUILD;
+
+-- To REORGANIZE
+-- ALTER INDEX IX_Employee_LastName ON Employees REORGANIZE;
+
+ALTER INDEX  [idx_BusinesEntity] ON Employees REORGANIZE;
+
+
+-- SQL_Maintenance_Solution_ola_hallengren
+/*
+-- Nr 1 - 4 will take care of BACKUP
+-- [DatabaseBackup - SYSTEM_DATABASES - FULL]
+-- [DatabaseBackup - USER_DATABASES - DIFF]
+-- [DatabaseBackup - USER_DATABASES - FULL]
+-- [DatabaseBackup - USER_DATABASES - LOG]
+
+-- Nr 5 will take care of System IntegerityCheck (master,msdb,model,Tempdb)
+-- [DatabaseIntegrityCheck - SYSTEM_DATABASES]
+
+-- Nr 6 will take care of User Databases IntegerityCheck
+-- [DatabaseIntegrityCheck - USER_DATABASES]
+
+-- Nr 7 will take care of Index Optimization 
+-- [IndexOptimize - USER_DATABASES]
+-- It will run DBCC CheckDB -- Check the Integrity of your database to ensure that there is no corruption
+-- DBCC CheckDB
+*/
+
+/*
+Index Optimize Does 3 things
+-------------------------------------------------------
+1. Reorganize 5-29%
+2. Rebuild Above 30%
+3. Update Statistics - Statistics Is very import and EXECUTION PLAN is generated based on STATISTICS. If statistics is out of date SQL Server will generate a less than OPTIMAL Execution Plan, its a good idea to update STATISTICS
+*/
+
+
+-- FILL FACTOR
+/*
+The fill factor refers to the percentage of space on a database page that 
+is filled with data. When a database table is created it is stored in one 
+or more data pages. The filee factor determines how much space in each data 
+page will be reserved for futrue growth.
+
+For example a fill factor of 80% means  that only 80% of the space on each
+data page will be used for storing data, leaving the remaining 20% for future
+growth. This can help prevent performance problems caused by fragmentation of 
+the data, which can occur when the database engine has to split a page to 
+accommadate new data
+
+However, a higher fill factor can also lead to more wasted space and slower
+performance due to increased page splitting. The optima fill factor will
+depend on factor such as the amount of data being stored and the frequency
+of inserts and updates. 
+
+The less split the better
+*/
+
+-------------------------------------------------------------------------
+-- Company create a Database to store their store procedure
+-- Master - Under - Programmability - Stored Procedures - there you find the tools
+-- UtilityDB - Under - Programmability - Stored Procedures - there you find the tools
+-- DBAdmin - Under - Programmability - Stored Procedures - there you find the tools
+-- DBATools
+-- DBADB
+
+
+-- 2.
+-- ADAM MECHANIC
+-- SP_WhoisActive -- It shows us all the active session with our database, it show who is running what 
+-- http://whoisactive.com/
+-- To Execute it -- 
+Use Master
+Sp_WhoIsActive -- In another query window during any running statement
+
+-- 3.
+-- Paul Randal: Waitstats
+-- https://www.sqlskills.com/blogs/paul/wait-statistics-or-please-tell-me-where-it-hurts/
+-- Use Master
+-- To Execute it run this query -- 
+Use Master
+Sp_Waitstats
+-- https://www.sqlskills.com/help/waits/ASYNC_NETWORK_IO
+
+
+
+-- 4.
+-- BRENTOZAR - First Responder Kit - To TROUBLESHOOT DATABASE PERFORMANCE
+-- https://www.brentozar.com/first-aid/
+-- BrentOzar -- FirstRespond Kit
+Sp_BlitzCache
+Sp_BlitzIndex -- Analyze Index, execute the query on another window
+Sp_BlitzFirst
+
+
+
+Sp_WhoIsActive -- Only show us User Process that are running 
+               -- Want to see 1. Long running query
+			               -- 2. Blocking Session
+						   -- 3. Waits -- Paul Randal: Waitstats will show you what is WAITS
+						   -- Paul Randal: Waitstats
+
+sp_who2 -- Show us all system and user process running
+        -- 1- 50 is System session while 51 Above is a User Sessi
+
+
+
+Use AdventureWorks2016
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John'
+Go 50
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where LastName = 'John'
+Go 100
+
+Select BusinessEntityID, FirstName, LastName from Employee
+Where FirstName = 'John'
+Go 100
+
+Create Clustered Index idx_BusinessEntity
+on Employee (BusinessEntityID)
+
+
+select * from person.person
+Go 200
+
+
+
+-- Class - 19 => Locks - Blocking - Deadlocks - Troubleshootin SlowRunning Queries - WhoIsActive - WaitsStats - Paul Randal Tools -ExecutionPlan - BrentOzar Tools - BlitzFirst - BlitzIndex -BlitzCache - ActivityMonitor - Profiler
+-------------------------------------------------------------------------------------------------
+-- What is purpose of LOCKS
+   -- Applications use database LOCKS to control data integrity in multi-user concurrency situations and are part of the SQL Server internals. 
+   -- LOCKS prevent data from being modified by two simultaneously sessions. In a normal server environment, infrequent blocking locks are acceptable. 
+   -- BLOCKING is not the same thing as a DEADLOCK
+
+-- Blocking can happen => In our database we have multiple tables and when you are trying to update table you acquire a LOCK on that particular table for instance there is table called employee and you are trying to modify an employee address may be that is one of the column on that particular table as at the time you are trying to modify that column or modify that object within the table you are acquiring a lock on that table so as at that time no body can actually modify that particular table because you acquired a lock 
+
+
+-- LOCKS --A lock is placed on an object (row, page, extent, table, database) by the SQL Server when any connection access the same piece of data concurrently (concurrently which leads to BLOCKING). ie in other not to update a row or column
+
+-- BLOCKING -- Occurs when one session has a lock on an object and thus causes another session to wait in a holding queue until the current session is entirely done with the resources
+
+-- DEADLOCK -- A dead occur when two separate transaction (T#1 and T#2) have exclusive locks on objects and at the same timeare trying to update or access each other's objects
+
+-- What causes LOCKS, BLOCKING and DEADLOCKS? 
+   -- Poor database design can cause crippling database lock contention
+   -- Poor indexing strategy
+   -- Tables are not completely normalized
+   -- Query implementation problem
+   -- Optimize Transact-SQL code
+
+-- Ways to monitor LOCK, DEADLOCKS and BLOCKING
+   -- sp_lock
+   -- sp_who2 sproc
+   -- Activity Monitor
+   -- SQL Profiler
+   -- Performance monitor
+
+-- Ways to avoid BLOCKING and DEADLOCKS
+   -- Use clustered indexes on high-usage tables
+   -- Break long transactions up into many shorter transactions
+   -- Make sure that UPDATE and DELETE statements use an existing index
+   -- If your applications code alows a running query to be cancelled, it is important that the code also rollback the transaction.
+
+-- The most common types of LOCK MODES
+   -- Exclusive locks(X)
+   -- Shared locks(S)
+   -- Update locks(U)
+   -- Intent locks(I)
+   -- Schema locks(Two types SCH-M and SCH-S)
+   -- Bulk Updates(BU)
+
+
+-- Exclusive locks(X) => (X) is placed on a database object whenever it is updated with an INSERT or UPDATE statement
+-- Shared locks(S) => (S) is put to a database object whenever it is being read (using the SELECT statement)
+-- Update locks(U) => (U) which can be thougth of as an in between mode between shared and exclusive locks. The main purpose of the UPDATE LOCK is to prevent DEADLOCKS where multiple users simultaneously try to update data
+-- Intent locks(I) => (I) are used to indicate that a certain lock will be later placed on a certain database object. Intent locks are used because locks can form hierarchies
+-- Schema locks(Two types SCH-M and SCH-S) => are used to prevent changes to object structure, bulk update locks (BU) are used when updating or inserting multiple rows using a bulk update
+-- Key-range locks (R) => are used to lock ranges of keys in an index
+
+
+-- Example of LOCKS
+--------------------------------------
+/*
+
+Create Database LocksDB
+
+Create table Employee
+(CustomerID int Not Null, CustomerName Varchar(50), SalesPerson varchar(50), Country Varchar(50)) 
+
+Create table Results
+(StudentID INT, studentName varchar(50), Result int)
+
+Alter table Employee 
+Add Constraint PK_Customer Primary Key (CustomerID)
+
+Insert Into Employee
+Values
+(1, 'Charles', 'Mary', 'USA'),
+(2, 'Asyley', 'Mike', 'Canada'),
+(3, 'Jake', 'Buni', 'Italy'),
+(4, 'Arthur', 'James', 'UK'),
+(5, 'Prakash', 'Umar', 'India'),
+(6, 'Abdul', 'Sodiq', 'UEA'),
+(7, 'Fransico', 'Segun', 'Italy'),
+(8, 'Alabi', 'Kuku', 'Nigeria')
+
+Select CustomerId, CustomerName, SalesPerson, Country from Employee
+
+--Let Modify Column CHARLES of SalesPerson Mary to Houston
+UPDATE Employee
+SET SalesPerson = 'Houston'
+WHERE CustomerID = 1;
+*/
+
+-- Example of LOCKS
+--------------------------------------
+
+Create Database LocksDB
+Use LocksDB
+-- Table 1
+Create table TableOne
+(ID int, Fname Varchar(50)) 
+
+-- Table 2
+Create table TableTwo
+(ID int, Fname Varchar(50)) 
+
+-- Insert into TableOne
+Insert into TableOne 
+Values (1, 'Tom')
+
+-- Insert into TableTwo
+Insert into TableTwo 
+Values (1, 'Ssusan')
+
+Select * from TableOne
+
+Select * from TableTwo
+
+
+-- Check the status of LOCK with sp_who2
+
+Sp_who2
+
+-- STEP 1
+/*
+SQL TRANSACTION 1 -- Will UPDATE the TableOne WITHOUT 
+committingthe Transaction, As such the TRAN 1 is still 
+not commited. The Lock is still in place.
+*/
+Use LocksDB
+Select * from TableOne
+
+Begin Tran -- What type of SQL statement is BEGIN TRAN => TCL
+Update TableOne -- DML
+Set Fname = 'Mary' 
+Where ID = 1
+
+Select * from TableOne
+-- Now TableOne Fname is Mary
+
+Rollback -- is to ROLLBACK to TOM
+Select * from TableOne
+
+-----------------------------------------------
+
+Begin Tran -- TCL = Session 57 acquire EXCLUSIVE LOCKS and all other session that want to also update same table will be BLOCKING
+Update TableOne -- DML
+Set Fname = 'Hammed' 
+Where ID = 1
+
+Select * from TableOne
+-- Now TableOne Fname is Mary
+
+Commit -- Means it completely saved can not be ROLLBACK anymore
+Select * from TableOne
+
+-- This shows that the UPDATE was successful, But Not Commited
+-- COMMITED -- Means the query has be submitted but NOT SAVED
+
+Select * From TableOne
+
+-- BLOCKING
+----------------------------------------------------
+Begin Tran -- TCL -- its BLOCKING now 
+Update TableOne -- DML
+Set Fname = 'John' 
+Where ID = 1
+
+-- If you open new query window and you execute below query line 2220 to 2223 it will just be rolling it will never executed that is blocking telling us that someoe ison the session
+Begin Tran -- TCL
+Update TableOne -- DML
+Set Fname = 'Thomas' 
+Where ID = 1
+commit
+Select * From TableOne
+
+-- Sp_who2  -- Store Procedure and always Focus on SPID 51 and above when u execute the query
+
+Sp_whoisactive -- Way better and its better to Execute it on MASTER Dont forget to execute the query from Adam known as Sp_whoisactive and always EXECUTE THE QUERY ON A NEW UERY WINDOW
+-- https://github.com/amachanic/sp_whoisactive
+
+
+Begin Tran -- TCL
+Update TableOne -- DML
+Set Fname = 'Thomas' 
+Where ID = 1
+commit -- Now is SAVED
+
+Sp_whoisactive -- Always EXECUTE THE QUERY ON A NEW UERY WINDOW
+ 
+Select * From TableOne
+-- Sp_whoisactive -- We show you all the process that are running in the database is good for Troubleshooting -- To see what is running in the Database and you can use (Sp_who2) BUT if you use (Sp_whoisactive) shows you are more professional
+-- What to Look for...
+
+
+
+
+-- 1. Check on long the query has been running
+-- 2. Is there any Blocking Session
+-- 3. Look at waiting infomation (WAIT_INFO) you are getting
+
+-- Reason to execute Sp_whoisactive
+-- 1. Application is running slow
+-- a. Query is running slow
+-- b. Application is time out
+-- c. Application is free
+-- d. We are unable to pull report
+-- What do you do -- If application is running slow one of the thing that I would do to troubleshoot. Because whatever the application is doing is interpreted as SQL QUERY and the SCRIPT I would use is to RUN > Sp_whoisactive by ADAMECHANIC to get an idea what is running in the database
+
+
+-- What I will LOOK for or like to see
+-- 1. Any long running queries
+-- 2. Blocking sessions
+-- 3. Wait Stats i.e wait information
+
+-- IMMEDIATE SOLUTION -- To 1 and 2 is to KILL the session depending on what is running. You have to get APPROVAL from the Application Team to kill that process
+-- I can now go back to review the SQL code to understand why its causing Blocking or running for a long time
+
+-- INTERVIEW QUESTION => 
+   -- 1. How do you troubleshoot a slow running query
+   -- 2. You get a call from the app team that the application is running slow
+   -- 3. I have a query that was previously running fast and all of a sudden is running super slow
+   -- 4. You get a complain that your application is having performance issues
+
+-- Answer => I will like to look at what is running in the database Server using
+             -- 1. Sp_whoisactive by Adam Mechanic and does not come with SQL Server
+			 -- 2. Sp_who2 - comes with SQL Server
+-- When analyzing the results of WHOISACTIVE i am looking out for 3 things
+   -- 1. Long runing query - Resolution is to get approval to kill the session and go back to review the query
+   -- 2. Blocking Session - Resolution is to get approval to kill the session and go back to review the query
+   -- 3. Wait Stats - It will give you an idea of the bottle neck SQL Server is facing
+      -- A. CXPacket - Talking about paralelism within the database
+	  -- B. Pageiolatch
+	  -- C. Asyncnetwork IO
+	  -- D. HADR -- AlwaysOn (High-Availability and Disaster Recovery)
+
+
+/*
+<?query --
+Select * from TableOne
+--?>
+
+61 is running trying to SELECT from TableOne
+and 
+<?query --
+Begin Tran
+Update TableOne -- DML
+Set Fname = 'Mary' 
+Where ID = 1
+
+53 is trying to UPDATE and is BLOCKING 61
+--?>
+*/
+-- NOW TO KILL A SESSION
+-- Always EXECUTE it on MASTER in another QUERY
+Kill 53 -- IMMEDIATELY Delete the query
+
+-- Then execute Whoisactive again
+Sp_whoisactive -- Always EXECUTE it on MASTER in another QUERY
+
+
+-- 
+
+
+-- Everything that is coming from APPLICATION to DATABASE is INTERPRETED as SQL QUERY 
+
+
+Use AdventureWorks2016
+Select * from Person.Person
+Go 50 -- Run/Execute 50 times
+
+
+-- Check it out on Google > (3655213ms)LCK_M_S sql server
+-- https://www.sqlskills.com/help/waits/lck_m_s/
+-- This wait type is when a thread is waiting to acquire a Shared lock on a resource and there is at least one other lock in an incompatible mode granted on the resource to a different thread.
+
+-- NOW LETS CONTINUE THE BLOCKING TO SEE ROLLBACK
+-- EXECUTE THIS SCRIPS BELOW AGAIN
+Use USA_DB
+Begin Tran
+Update TableOne -- DML
+Set Fname = 'Mary' 
+Where ID = 1
+
+Select * From TableOne
+
+/*
+Since I have not set the Transaction To Commit, Its still an 
+OPEN Transaction and any Attempt to MODIFY TableOne will 
+result in a BLOCK!!!
+*/
+
+-- Rollback Command undos the update of TOM
+-- ROLLBACK
+Rollback
+
+Select * From TableOne
+
+Use USA_DB
+Begin Tran
+Update TableOne -- DML
+Set Fname = 'Mary' 
+Where ID = 1
+
+Use USA_DB
+Select * From TableOne
+
+-- COMMIT if everything is fine after the TRAN UPDATE
+
+COMMIT TRANSACTION -- To save the transaction
+
+Select * From TableOne
+
+-- Now is MARY (saved)
+
+-- VIEW THE BLOCKED SPID VIA SPROC (NO BLOCKING AS THE SECOND SESSION HAS NOT STARTED)
+
+Sp_who2
+Sp_Whoisactive
+
+
+-- DEADLOCKS -- A dead occur when two separate transaction (T#1 and T#2) have exclusive locks on objects and at the same time are trying to update or access each other's objects
+-------------------------------------------------------------------------------- 
+-- If you have Deadlocks situation SQL Server determine deadlock victim
+Create database DeadLockDB
+
+Use DeadLockDB
+-- Table 1
+Create table TableOne
+(ID int, Fname Varchar(50)) 
+
+-- Table 2
+Create table TableTwo
+(ID int, Fname Varchar(50)) 
+
+-- Insert into TableOne
+Insert into TableOne 
+Values (1, 'Tom')
+
+-- Insert into TableTwo
+Insert into TableTwo 
+Values (1, 'Sussan')
+
+Select * from TableOne
+
+Select * from TableTwo
+
+
+Select * From TableOne
+
+--Table 1
+------------------------------------------
+Use DeadLockDB
+Begin Tran -- (TCL)Transaction Control Language
+Update TableOne -- (DML)Data Manipulation Language
+Set Fname = 'Mary' 
+Where ID = 1
+
+Commit Tran
+
+----------------------------------------
+-- Table 2
+Begin Tran
+Update TableTwo -- DML
+Set Fname = 'Sam' 
+Where ID = 1
+
+Commit Tran
+
+
+Truncate Table TableOne
+Truncate Table TableTwo
+
+--------------------------------------------------------
+Use USA_DB
+Select * From TableOne
+
+
+-- EXECUTED ON ANOTHER QUERY WINDOW
+
+Use DeadLockDB
+Begin Tran
+Update TableOne -- DML
+Set Fname = 'Sam' 
+Where ID = 1
+
+Commit Tran
+
+
+ 
+
+
+Truncate Table TableOne
+Truncate Table TableTwo
+
+
+
+/*
+-- EXECUTED ON ANOTHER QUERY WINDOW SAME TIME AS ABOVE (line 2457  to 2475)
+Use DeadLockDB
+Begin Tran
+Update TableTwo -- DML
+Set Fname = 'Randolph' 
+Where ID = 1
+
+Commit Tran
+
+
+Begin Tran
+Update TableOne -- DML
+Set Fname = 'Bob' 
+Where ID = 1
+
+Commit Tran
+*/
+
+/*
+What is the difference between locking, blocking and deadlock => 
+Well SQL Server introducing locking mechanism to ensure data concurrency 
+while updating record, so while updating the record sql server acquire a 
+lock under a particular object during the process of update now blocking 
+actually occurs when another session is trying to update thesame record that 
+you have EXCLUSIVE lock on in that particular situation that process will 
+wait because the lock has been acquire the object so that process of waiting 
+is actually called BLOCKING because you are waiting, now Blocking itself is 
+not a problem you know as long as the user release the lock but when Blocking 
+become problem is when is persistent, persistent means its just staying there 
+for ever that means that process has not made changes and needed to change imagine 
+there is business that needed to change or you need to made transaction in your bank 
+account, the records that need to update immediately and is not, imagine I withdraw 
+money from my bank account and still not reflect who knows is BLOCKING, and now
+
+DEADLOCK is a stiuation where two process that acquire EXCLUSIVE LOCKS and trying to update each others,
+process on which they have acquire locks on that process results  to DEADLOCK and 
+SQL Server determined who the deadlock is. 
+*/
+
+
+-- sp_whoisactive -- By Adam Mechanic Run it 4 to 5 times
+-- WHAT TO CHECK OR LOOK OUT FOR
+   -- 1. Long Running queries
+   -- 2. Persistent blocking session
+   -- 3. Waitstats
+
+
+
+-- When you see the Blocking session -- You can KILL the session by execute KILL 65 (If 65 is the running window query always check the running windows)
+
+-- Kill 60
+
+-- What causes CPU to rise in SQL Server - Its because of query running and there are some expensive query and their some that are not. 
+
+-- BENTOZAR SCRIPT
+----------------------------------------------------------------------
+-- TO SEE ALL EXPENSIVE QUERY RUNNING
+-- Activity Monitor
+-- sp_blitzcache -- By BentOzar -- https://chat.openai.com/chat
+
+-- https://www.brentozar.com/blitz/
+
+sp_blitzcache -- Look at --> 1. Warnings, 2. Query Plan, 3. Missing Indexes in the results
+
+-- Table Scan -> means SQL Server is doing row by row scan and it means there is missing or there is non Clustered Index on that table
+
+sp_blitzcache @top=20 -- To more than top 10 then you need to say @top=20 it will show you top 20 expensive query on your server
+sp_blitzcache @DatabaseName=AdventureWorks2016 -- To narrow down a particular database and you have to pass the parameter i.e the Database name
+
+-- The best place to place CLUSTERED INDEX -> 
+   -- 1. First the more UNIQUE the column is the better is good for clustered index eg EmployeeID
+   -- 2. Where ever your WHERE CLAUSE is better to put clustered index there 
+   -- The 1 and 2 is also apply to Non Clustered index
+
+sp_blitzindex @databaseName = AdventureWorks2016
+
+Set statistics io on
+
+Use AdventureWorks2016
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+Create Clustered Index idx_BusiID
+On person (BusinessEntityID)
+
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+Create NonClustered Index idx_fname_lname
+On person (Firstname, Lastname) -- Still doing INDEX SCAN. Get what the first key (FirstName) getting the most benefit while the LASTNAME did not get that much benefit from the NON CLUSTERED INDEX
+
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+-- By the way is good to SET STATISTICS IO ON -- To see more details in the messages 
+SET STATISTICS IO ON
+
+-- Lets remove Lastname from Non clustered index of Firstname
+-- Right click on the fname_lname index - property - then remove LASTNAME and ADD lastname as Include
+
+-- READING EXECUTION PLAN - Always from Top to Bottom and Right to Left
+
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+Create NonClustered Index idx_lname
+On person (Lastname)
+
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+-- Right click on the idx_lname index - properties -  and ADD Firstname as Include to lastname 
+Select BusinessEntityID, FirstName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+
+Select BusinessEntityID, FirstName, MiddleName, LastName from Person
+Where FirstName = 'Robin' or LastName = 'John'
+
+-- PERFORMANCE TUNINING
+----------------------------------------------------------------------------
+-- PERFORMANCE TUNNING KILLERS -> 
+   -- 1. Insulficient and Inaccurate Indexes
+   -- 2. Inacurate Statistics
+   -- 3. Improper query design
+   -- 4. Poorly generated execution plan
+   -- 5. Excessive blocking and deadlocks
+   -- 6. Inappropriate database design
+   -- 7. Recompiling execution plans
+   -- 8. Excessive Index fragmentation
+
+-- EXECUTION PLAN -> It will be generated by query optimizer with the help of statistics of the tables
+
+-- TYPES OF EXECUTION PLAN
+   -- 1. Estimated Execution Plan
+   -- 2. Actual Execution Plan
+   -- 3. Live Query Statistics: (2016 onwards)
+
+-- EXECUTION PLAN CAN BE SAVED INTO
+   -- 1. Graphical
+   -- 2. Text
+   -- 3. XML
+
+-- QUERY OPTMIZER: Its part of SQL Server engine that is used to determined the most efficient execution plan of SQL queries and it does this by optimizing each SQL statement based on the statistics
+-- example
+-- QUERY (Select Fname, Lname where EmpID = 10) ==> QUERY OPTIMIZER (Query optimizer will validate and return the best execution plan) and STATISTICS (Query optimizer uses the statistics and gives best plan ) ==> EXECUTION PLAN (Shows the details)
+
+-- PERFORMANCE TUNINING CAUSES
+--------------------------------------------------------------------
+-- 1. How do you troubleshoot a slow running query
+-- 2. You get a call from the app team that the application is running slow
+-- 3. I have a query that was previously running fast and all of sudden is running super slow
+-- 4. You get complain that your application is having performance issues
+
+-- SOLUTION
+-- 1. I will like to look at what is running in the database server user
+   -- A. sp_whoisactive
+   -- B. sp_who2
+
+-- When analyzing the results of whoisactive I am looking out for 3 things
+   -- 1. Long Running Query: Resolution is to get approval to kill the session and go back to review the query
+   -- 2. Blocking Session: Resolution is to get approval to kill the session and go back to review the query
+   -- 3. Wait Stats: It will give me an idea of the bottle neck / issue (Give you an idea of issue of what you are facing) sql server is facing
+      -- A. CXPacket => Means SQL Server is having paralelism issue what is paralelism letme give you an example let say you have a store selling jack daniel ok and you have one staff the supplier ships in a truck of jack daniel to your store and only one guy is off loading the truck offcourse is going to take him some time compare to when two guy off loading the truck now what PARALELISM basically is that your QUERY are running into parallel which is not a problem for itself for obviouse reason if you have two people off loading the truck versus one person which one is better  which is two, now if you have three people or what if in the truck you have less than 10 pack and you are now carry 20 people to off loading the truck even though they might finish the work easily they have acquire 20 resources to solve that issue that one or two people should have done, so you are wasting resources on a query that is not expensive now other query that need those people let say at that time you sent 20 people to off loading that small packs and they now brought new big truck and that big truck will wait untill that 20 people finish the off loading the first truck so even though you are running parallel you are using your parallel power on small process and because of that other process are waiting for the people to finish the work before they move to the next truck.  
+	  -- Are you familiar with CXPacket - means SQL Server is having PARALLELISM issues with some queries -- SOLUTION to it -- Change the setting of your Maximum Degree of Parallelism (MAXDOP determine how many processors should be deploy and Cost Threshold determine when MAXDOP should be kick in ) means setting rules on resources 
+	    -- To adjust the MAXIMUM DEGREE OF PARALLELISM -> Right click on the SQL SERVER NAME - PROPERTIES - CLICK ADVANCE - you will see PARALLELISM - By default is ZERO  (zero means use all the processor) as long as the COST THRESHOLD FOR PARRALLELISM is 5 which saying at what point should number of MAX DEGREE OF PARALLELISM kicks in  - if you set MAX DEGREE OF PARRALLELISM to 2 means use 2 processors i.e as long the COST THRESHOLD is 5 deploy 2 MAX DEGREE so if Cost Threshold is not up to 5 do not go into 2 MAX DEGREE. Most of the company use COST THRESHOLD to 100 while MAX DEGREE is 0 so untill COST THRESHOLD is 100 then use all the processor BUT as long as the cost is below 100 use 1 max degree
+	  
+	  -- B. Pageiolatch: SQL Server is doing Physical reads than logical reads means you dont have enough indexes on database
+	  -- C. HADR: AlwaysOn, database mirroring having problem
+	  -- D. LCK: Blocking issues
+	  -- E. Asyncnetwork IO
+
+-- 1. Sp_whoisactive -- Check what is running in the Database
+   -- A. Long Running Query
+   -- B. Persistent Blocking -- You KILL the session and go back to review the query means run the query again
+   -- C. Wait stats -- Bottle neck gives you an idea what your SQL Server is facing
+-- 2. Narrow down to the expensive queries on my server
+   -- A. Activity Monitor
+   -- B. Set of my Script in Stored Produre like BentOzar Script. Looking at the QUERY PLAN, WARNING, MISSING INDEX.
+   -- C. Query Store (2016 onward) -- To turn on QUERY STORE -> Right click on the DatabaseName - Properties - Query Store (You can put it READ ONLY or READ WRITE) - Ok -> If you refresh the database and open it you will see QUERY STORE
+   -- You will see
+   -- 1. Regressed Queries - means some of the query are performing poorly
+   -- 2. Overall Resources Consumption - if you right click and click VIEW TOP RESOURCE COUSUMING QUERIES
+
+-- INTERVIEW QUESTION -> Are you familar with QUERY STORE -> Answer Sure QUERY STORE will do same thing that will mention before it will show you TOP RESOURCE CONSUMING QUERIES, it will show you OVERALL RESOURCE CONSUMPTION, it will show you REGRESSED QUERIES and all of the information and it can recommend index saying missing index 
+-- 3. We take a look the Execution Plan for the queries
+   -- A. COST => Looking for cost break down (Where the HIGHEST COST is)
+   -- B. OPERATION => Operation happening around the cost
+      -- i.   Table Scan -- No clustered index (Doing ROW BY ROW SCAN)
+	  -- ii.  Index Scan -- Find index on some column and the one other that is not having index is then doing row by row scan and is doing KEY LOOK UP or RID look up for them
+	  -- iii. Key Look up
+	  -- iv.  RID Look up
+	  -- v.   For INDEX SCAN, KEY LOOK UP, RID LOOK UP SQL Server can find some information the index but some columns are not found the index so SQL Server we do a scan look up for those records which can be expensive
+   -- C. We cantake advance of creating a covered index, composite index to fix the issue
+-- 4. I can get more information about the database performance from QUERY STORE
+   -- A. Regressed Queries
+   -- B. Top Consuming Queries
+
+-- 5. Another thing I want to look at is STATISTICS: If STATSISTICS is not up to date SQL Server we generate a less than OPTIMAL execution plan. Ensure the stats is update  
+ 
+-- 6. Stored procedure: The problem of store procedure is called PARAMETER SNIFFING. 
+   -- A. A situation where SQL Server uses the CACHED execution plan for a stored procedure based on a set of parameters but  when you execute the same stored procedure with another set of parameters SQL Server uses the CACHED execution plan which in this case is not optimal.
+   -- SOLUTION TO IT:-
+   -----------------------------------------------------
+   -- i.  You can drop the execution plan that SQL Server has in memory i.e that thing you have in memory you can forget it which in this case is not optimal
+   -- ii. You can recompile the stored procedure(means any time you want to run this stored procudure generate another execution plan at run time) i.e SQL Server forget all the execution plan that you have in your memory that is generate another execution plan at run time
+   -- iii. You can introduce a QUERY HINT option optimize or optimize for unknown that is you are telling SQL Server that use the best parameter for me for this execution plan
+
+-- 7. I can also  create extended event, or SQL SERVER PROFILER to capture TRACE of my database work load and analyze the result using DATABASE ENGINE TUNING ADVISOR (DTA) which can give recommendation on what to do
+
+-- Interview Question -- 
+-- You have an application that is running slow how would you go about the troubleshooting or fixing the issue or solving the problem 
+-- Respond -- Absolutly DBA is very common for us to have issue where our application is running slow, one of the things I like to do is to actually go to the server and know what is happening I will usually run sp_whoisactive to see the process that are running in that server, now when I run sp_whoisactive and offcourse you can use sp_who2 and from the result I will focus on couple of items number 1 is LONG RUNNING QUERY, 2 are there PERSISTENT BLOCKING SESSION AND 3 what kind of WAIT STATS am I seen by PAUL RANDER so usually with LONG RUNNING AND PERSISTENT BLOCKING SESSION I will typically show that session to our application team to get approval to KILL that particular session most of time they will tell us to kill it very view occassion they will tell us to wait base on what the query is doing from there I will going down to look for the expensive query in my server because at the end of the day whatever the application is doing is interpret as query on the database so I want to narrow down to expensive query or top resorceful query on my server and to do that there are different ways of doing that but I like to use ACTIVITY MONITOR and MY OWN SCRIPT that I store as stored procedure that i use, now that i narrow down this expensive query the next thing I will do is to look at the EXECUTION PLAN for those query because sql server will show exactly where the query is been executed to the inside where the at the execution plan for those query because SQL Server will show us how exactly how the query has been executed which will give us an insigt of where the problem is and when i look at the execution plan I will look at the cost breakdown, I will look at where is the HIGHEST Cost and look at the Operation that is happening around the cost for example am I seen a TABLE SCAN which is saying SQL SEREVR is doing row by row scan of my record which is not efficient its very expensive operation and it simply means that there are no clustered index in the particular table and I will need to probably to craete Clustered Index base on how the query look like or the table defination itself, are you seen INDEX SCAN, KEY LOOP UP OR RID LOOK UP all this is telling me that there are indexes on the table but some column are probably missing index so because of those column that are missing index sql server is doing index scan or look up for those column because it can not find the index so in the situation like that I can take the advantage of creating COVERED INDEX OR COMPOSITES INDEX just depending on the query defination to kind of take care of it.
+
+-- STATISTICS
+-- If your Statistics is up to date SQL Server will generate good execution plan based on data distribution within your database but if your statistics is not up date then SQL Server will generate a less optimal execution plan because SQL Server is will generate information based on what is having.
+
+-- On the LIVE QUERY STATISTICS on the top to see the live
+
+Select BusinessEntityID, FirstName, MiddleName, LastName from Person
+Where FirstName = 'John' -- or LastName = 'John'
+Go 100 -- Execute it on 3 to 4 windows with at least 100 times or more
+-- Execute below query in two or three query windows with different where clause such as below
+Select BusinessEntityID, FirstName, MiddleName, LastName from Person
+Where MiddleName = 'Angelo' -- or LastName = 'John'
+Go 100
+
+-- Execute SP_BLITZCACHE from BENTOZAR SCRIPT THAT ALREADY STORED IN THE STORED PROCEDURE OR COPY THE SCRIPT AND RUN IT ON MASTER THE EXECUTE THE STORED PROCEDURE
+SP_BLITZCACHE -- on another window
+-- It will show you exact what to do - Check the WARNING, QUERY PLAN, MISSING INDEX - you can double click on the MISSING INDEX it will show you what exactly to do such as below 
+<MissingIndexes>
+
+/* 
+The Query Processor estimates that implementing the following index could improve query cost (2.84451)
+by 99.7088% for 81 executions of the query over the last 0 hours.
+*/
+
+/* 
+USE [AdventureWorks2016]
+GO
+
+CREATE NONCLUSTERED INDEX ix_MiddleName_Includes
+ ON [dbo].[Person] ([MiddleName])
+INCLUDE ([BusinessEntityID], [FirstName], [LastName]) WITH (FILLFACTOR=100, ONLINE=?, SORT_IN_TEMPDB=?, DATA_COMPRESSION=?);
+GO
+*/
+
+-- If you run below query it will create the missing index that is recommendation from SP_BLITZCACHE from BENTOZAR Script
+</MissingIndexes>
+
+USE [AdventureWorks2016]
+GO
+
+CREATE NONCLUSTERED INDEX ix_MiddleName_Includes
+ ON [dbo].[Person] ([MiddleName])
+INCLUDE ([BusinessEntityID], [FirstName], [LastName]) WITH (FILLFACTOR=100, ONLINE=?, SORT_IN_TEMPDB=?, DATA_COMPRESSION=?);
+GO
+
+-- SQL SERVER PROFILER
+---------------------------------------------------------------------------------------------
+-- There is a TOOLS called SQL Server PROFILER under TOOLS at the top of the ssms studio
+
+
+-- Tools - SQL Server Profiler - Will run a trace on your server as a matter of fact 
+-- SQL Server Profiler => Tools - SQL Server Profiler - it will open in another window completely - Connect - Trace Name (Sample Trace) - Use the template (Tunning) - Save the Trace (in a file. Give it a name =>SampleTrace) click SAVE - Click - Events Selection (To see the event it will capture) - Click on RUN
+-- Now go and execute the query you are running before the profiler will show you all the query running and it will save it 
+-- Click STOP (RED BUUTON) - Click - Tools - Database Engine Tuning Advisor - Connect - Select the DATABASE you are trying to TUNING - Then the file am looking for is - FILE - Click the button at the end it will open another window, select the FILE you saved before (sampletrace2) - Click on START ANALYSIS - It will begin to analyse the everything it capture when it running the statement query in the ssms studion once it done it will give you RECOMMENDATIONS with 99% percent sometime 
+-- SQL Server Profiler is not good to leave it running for long period make sure it run for the time it needed and stop because it can consume more resource on your server so instead of PROFILER you go for EXTENDED EVENT which is another alternative to PROFILER 
+
+SET ANSI_PADDING ON
+
+CREATE NONCLUSTERED INDEX [_dta_index_Person_6_1255675521__K5_K1_6_7] ON [dbo].[Person]
+(
+	[FirstName] ASC,
+	[BusinessEntityID] ASC
+)
+INCLUDE([MiddleName],[LastName]) WITH (SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF) ON [PRIMARY]
+
+
+
+-- Interview Question -- DBA you have an application that is running slow how do you go about the troubleshooting
+-- Respond -- Sure absolutely When I get issues like this off course as DBA you will see issues like that often as dba that is running slow, the first thing i will like to do is to understand what is running within the database server so i will usually use script sp_whoisactive by Adam Machanic is my favourite tool to understand the process that is running within the database offcourse you can use sp_who2 you know, when am looking at the result of whoisactive there are couple of things I will look out for number one i want to see if there 
+-- 1. Long running query
+-- 2. if there is Blocking session
+-- 3. and I want to see what kind of WAIT STATS am facing
+-- usually i have been in a situation where there could be persistent blocking session and usually with persistent blocking session i will usually get an approval from the application team to kill the process but ofcourse you have to tell them what the process is running and they have to tell me if they want us to wait or to go ahead to kill it and a number of time when will kill that process will see immediately performance improvement because that particular process was blocking other process which was cause the application to time out so usually that can help, another thing to look out for is WAIT STATS now wait stats give us an idea of bottle neck or the issue SQL Server is facing you know and Sp_whoisactive give you that you can also use Paul rander script which is called WAIT STATS so when am looking at Wait Stats for example am i seen CXPacket issue, CXPacket is basically saying that your server is surfering from PARALLELISM issue and typical resolution to that is to change the setting of MAXIMUM DEGREE OF PARRALLELISM and COST THRESHOLD and for example are you seen PAGEIOLATCH which basically saying there is problem with your input and output sub system and it could be an indication that SQL Server is doing a lot of physical reads than logical reads or you dont have enough indexes on your database, I mean PAGEIOLATCH is not pointing to one thing it just depend on what issues you facing at that particular point in time and off course for example if you are seen LCK it means you are having BLOCKING on server so just base on that information I would have idea of what is happening on my server, another thing I would like to do also is to narrow down to expensive query on my server so for example to narrow down the expensive query I could introduce ACTIVITY MONITOR, I could use my own script stored procedure, I could use QUERY STORE for it so to narrow this expensive queries I would look at the EXECUTION PLAN for this queries and when am looking at the EXECUTION PLAN I want to see where the COST is and I want to see the OPERATION that is on the const for example I my see TABLE SCAN, TABLE SCAN is an indication of SQL Server is doing row by row scan of the records which is expensive so in a situation like this I will create CLUSTERED INDEX which can help SQL Server in searching for records you know just base on how the query is, how the table is you can create CLUSTERED INDEX which would help you know are you see an INDEX SCAN, are you see KEY LOOK UP or is it an RID LOOK UP this is just saying INDEX is on the table but some column are missing within this indexes so you want to take advantage of may be COVERED INDEX you want to use your INCLUDE statement or you want to do COMPOSITE INDEX or basically may be create another index all together usually what i have I seen most of the time 70% when having performance issue just create index could fix the issue but of course you dont want to create a lots of index because if you have a lot of index within your database and SQL Server will begin to have issues when you are doing UPDATE, INSERT AND DELETE so you want to make sure you have good balance on those, now another things that is important for me also is looking at the STATISTICS SQL Server rely on STATISTICS to generate EXECUTION PLAN so if your STATISTICS are out of date SQL Server will generate a less than optimer EXECUTION PLAN for you so in a situation like that you just make sure your STATISTICS are up to date and interesting in my own company will use OLA HALLENGREN maintenance solution and part of the job we have on OLA HALLENGREN is to ensure that our STATISTICS are up to date, I know different company do things differently, also when TROUBLESHOOTING PERFORMANCE issue most especially with STORED PROCEDURE issue you can run into situation with PARAMETER SNIFFING and basically the things with PARAMETER SNIFFING is this SQL Server will catche the execution of your STORED PROCEDURE base on the set of the parameter now when you try to execute that same STORED PROCEDURE again with another set up of parameter you can run into situation where SQL Server is use that catche execution plan to fulfil that query which in this case might not be optimer so there are couple of things that you can do number one you try to drop the execution plan for that particular query, two you can recompile your stored procedure which is basically telling SQL Server to generate another execution plan but here is it, if you know you are going to running stored procedure a lot of time and you are recompiling then you causing another issue entirely you know and also you can introduce a query hint OPTION OPTIMIZE or may be OPTIMIZE FOR UNKNOWN which can help you force different execution plan on your stored procedure now on few occassion i will create an extended event session or SQL Server PROFILER SESSION that will run TRACES on my database which will basically capture the workload on my server, I can now take the result of this PROILER and ANALYSE it in DATABASE TUNING ADVISOR which can now give recommendation sometimes give recommendation on INDEXES or statistics to be created within the database and also you want to look at index fragmentation for example if you are having high index fragmentation within your database it also means your index would not be effective as you want them to be because there is high fragmentation so in my company when the indexes are fragmented above 30% we will REBUILD and is between 5 to 29% we will usually REORGANIZE so this is some step that I followed when try to fix performance issue and most of time I am able to isolate the problem and then provide the solution to it base on what am seen unfortunately is not just one thing sometimes you just have through numbers of steps to be able to identify and fix the issue
+
+
+ --1. DBA How do you troubleshoot a slow running query
+ --3. I have a query that was previously running fast and all of sudden is running super slow
+ --Absolutely is fine since we already know that the query is running fast and all of a sudden running slow yeah a couple of things can be responsible for tha but one of the thing that I will first do is to take a look at the EXECUTION PLAN  of the query and when look at the execution plan it show us how SQL Server is execting that query so from there we can look at the COST and OPERATION that is happening around the COST for example I will seen Table Scan, TABLE SCAN is an indication of SQL Server doing row by row scan of the records which is expensive so in a situation like this I will create CLUSTERED INDEX which can help SQL Server in searching for records you know just base on how the query is, how the table is you can create CLUSTERED INDEX which would help you know are you see an INDEX SCAN, are you see KEY LOOK UP or is it an RID LOOK UP this is just saying INDEX is on the table but some column are missing within this indexes so you want to take advantage of may be COVERED INDEX you want to use your INCLUDE statement or you want to do COMPOSITE INDEX or basically may be create another index all together usually what i have I seen most of the time 70% when having performance issue just create index could fix the issue but of course you dont want to create a lots of index because if you have a lot of index within your database and SQL Server will begin to have issues when you are doing UPDATE, INSERT AND DELETE so you want to make sure you have good balance on those, now another things that is important for me also is looking at the STATISTICS SQL Server rely on STATISTICS to generate EXECUTION PLAN so if your STATISTICS are out of date SQL Server will generate a less than optimer EXECUTION PLAN for you so in a situation like that you just make sure your STATISTICS are up to date    
+
+
+ --and interesting in my company will use OLA HALLENGREN maintenance solution and part of the job we have on OLA HALLENGREN is to ensure that our STATISTICS are up to date, I know different company do things differently, also when TROUBLESHOOTING PERFORMANCE issue most especially with STORED PROCEDURE issue you can run into situation with PARAMETER SNIFFING and basically the things with PARAMETER SNIFFING is this SQL Server will catche the execution of your STORED PROCEDURE base on the set of the parameter now when you try to execute that same STORED PROCEDURE again with another set up of parameter you can run into situation where SQL Server is use that catche execution plan to fulfil that query which in this case might not be optimer so there are couple of things that you can do number one you try to drop the execution plan for that particular query, two you can recompile your stored procedure which is basically telling SQL Server to generate another execution plan but here is it, if you know you are going to running stored procedure a lot of time and you are recompiling then you causing another issue entirely you know and also you can introduce a query hint OPTION OPTIMIZE or may be OPTIMIZE FOR UNKNOWN which can help you force different execution plan on your stored procedure now on few occassion i will create an extended event session or SQL Server PROFILER SESSION that will run TRACES on my database which will basically capture the workload on my server, I can now take the result of this PROILER and ANALYSE it in DATABASE TUNING ADVISOR which can now give recommendation sometimes give recommendation on INDEXES or statistics to be created within the database and also you want to look at index fragmentation for example if you are having high index fragmentation within your database it also means your index would not be effective as you want them to be because there is high fragmentation so in my company when the indexes are fragmented above 30% we will REBUILD and is between 5 to 29% we will usually REORGANIZE so this is some step that I followed when try to fix performance issue and most of time I am able to isolate the problem and then provide the solution to it base on what am seen unfortunately is not just one thing sometimes you just have through numbers of steps to be able to identify and fix the issue
+
+
+
+-- CLASS 20 
+--------------------------------------------------------------------------------------------------------------------------
+-- 1. Setup Database In Cloud
+-- 2. Database Migration
+-- 3. ETL
+-- 4. Reporting
+
+
+-------------------------------------------------------------------------------------
+-- 1. SETUP DATABASE IN CLOUD
+   -- AWS 
+      -- 1. EC2 - Virtual Machine
+	  -- 2. RDS - Database As a Service Product
+   
+   -- Azure 
+      -- 1. Virtual Machine - VMs
+	  -- 2. Azure SQL - Database As Service
+	  -- 3. Azure Managed Instance -- Database As a Service
+
+   -- Google
+      -- 1. Compute Engine -- VMs
+	  -- 2. CloudSQL -- Database As a Service
+
+-- Typical way is 
+   -- 1. Set up your VM
+   -- 2. Install SQL Server
+
+-- All the Database As a Service (DBASS) in cloud -> You dont need to set up VM
+-- You dont have access to the VM
+-- The only way you connect to the database is through 
+   -- 1. SSMS
+   -- 2. DataStudio
+
+-- Create Database on Azure 
+-- STEPS
+   -- SQL database - Create - Subscription - Pay as you go - Resource Gruop - create Resource Group called Dev - Database Details(Name) OlaBankDB - Server (Create new Server - name (Tekypro) - Authentication method (Use SQL Authentication) - Server admin login (Ola) - Password (1234@Admin) - Ok ) -  Compute + storage (Configure database => Service tier (Basic (For less demanding workloads) - DTU max size (GB) - 2 - Apply) - Additional Setting (Start with a blank database, restorre from a backup... (Sample - it will restore sample database)) - Review + Create - Create - Create database - Go to HOME you will see SQL DATABASE - and you will see the OlaBankDB will just created - Click on it (it will show you some information) 1. Your server name, copy the Server name and Go to your VM on your computer - SSMS (click the connect) - Paste the SERVER NAME - Change to SQL SERVER AUTHENTICATION Login Name - Password  - Options (Select TRUST SERVER CERTIFICATE) - Go back to the Azure and set the FIREWALL ( Set fireawal - Public Access - Add your client IPV4 address(107.....)  - SAVE - Go back to the SSMS and CONNECT - Sign In  - Sign in to your Microsoft Azure = Done - You will is a bit different from regular server BUT behave same way. All you will see after connect is 1. Databases and the only system Database that come with it is MASTER 2. Security 3. Integrity Services Catalogs. Microsoft take care of the rest
+
+-- From 2016 and above SQL Server installation became different you have to install the DATABASE ENGINE  separately then after you are done then install SSMS separately so you can install SSMS without DATABASE ENGINE, ssms is just the interface for us to connect to our DATABASE ENGINE whether is on PREM or CLOUD ssms will allows to connect to it and it same thing with AZURE DataStudio
+-- Microsoft mange all behind the scene
+
+-- Now you can do all 
+-- Like 
+Create database TestDB
+
+-- With AZURE SQL => There are limitation no SQL Server Agent, no all the system database like you have on VM you only have Master, you dont need to worry about Patches, backup Microsoft will take care of it
+
+-- INTERVIEW QUESTION
+-- Do you have experience working in the cloud 
+   -- Yes In my current environment some of our databases sitting on Azure, AWS in AWS our cloud provide is AWS
+
+-- How do you set up your database in Azure
+   -- Well its prity straight forward you can used the CONSOLE where we have been create some stuff and you can use some command to create it also and you set it up, 
+
+-- How do you set up BACKUP in the cloud => Well AWS managed it and Microsoft managed it we just need to set up the window if we want to but we really dont need to
+
+-- What about High Availability => Its just one click determine which location you want your replica to be, you can set it up or you allowed the system to set it up by itself but if you have preference on where you want your server to be located you can set it up, High Availability in the cloud is very very easy to implement
+
+-- 2. DATABASE MIGRATION
+-------------------------------------------------------------------------
+
+   -- Types of Database Migration 
+      -- 1. Inplace Upgrade -> Upgrade same place is called INPLACE i.e 2016 Server upgrade to 2019 server
+      -- 2. Side by Side Migration -> Migrate from one place to another i.e let say there is a 2016 Server and you build another Server and then migrate(move) everything from current server to the new server
+
+
+
+-- 2. Side by Side Migration -> Moving from one server to another server
+   -- Side-by-side migration refers to the process of migrating from one SQL Server to another by setting up a new server alongside the existing one and gradually transitioning the workload from the old server to the new server. This approach minimizes downtime and provides a seamless migration experience. Here's an overview of the steps involved in a side-by-side migration:
+
+      -- 1. Planning: Assess your current SQL Server environment and determine the requirements and goals for the migration. Identify the database schemas, objects, users, and applications that need to be migrated.
+
+      -- 2. Set up the new SQL Server: Install and configure the new SQL Server instance that will be used for the migration. Ensure that it meets the necessary hardware, software, and security requirements.
+
+      -- 3. Database schema and object migration: Script out the database schema and objects (tables, views, stored procedures, functions, etc.) from the source server and apply them to the new server. This can be done using tools like SQL Server Management Studio (SSMS), SQL Server Data Tools (SSDT), or custom scripts.
+
+      -- 4. Data migration: Transfer the data from the source server to the new server. Several methods can be used for this, such as database backup and restore, SQL Server Integration Services (SSIS), Bulk Copy Program (BCP), or Data Migration Assistant (DMA).
+
+      -- 5. Application migration: Migrate the applications or update their connection strings to point to the new SQL Server instance. Test the applications to ensure they function correctly with the new database.
+
+      -- 6. Testing and validation: Perform thorough testing to ensure the migrated databases and applications function as expected on the new server. Validate the data integrity and verify that all functionalities are working properly.
+
+      -- 7. Transition: Once the new SQL Server instance has been validated, plan the transition of the workload from the old server to the new server. This may involve redirecting traffic, updating DNS records, or modifying application configurations.
+
+      -- 8. Monitor and finalize: Monitor the new SQL Server environment closely after the migration to identify any issues and optimize performance. Once you're confident that everything is functioning correctly, decommission the old server.
+
+-- Know the major thing to move
+   -- 1. Moving Databases
+   -- 2. Move Logins: use => This script creates two stored procedures in the master database. The procedures are named sp_hexadecimal and sp_help_revlogin .
+   -- https://learn.microsoft.com/en-us/troubleshoot/sql/database-engine/security/transfer-logins-passwords-between-instances
+   -- 3. Jobs -- 
+   -- 4. Linked Servers
+   -- 5. Replication -- can only be RE - CONFIGURE  
+
+-- SIDE BY SIDE MIGRATION 
+   -- Steps
+   -- 1. Moving database from old server to the new server using SHARE path method by creating share folder called Mig. and restore on the new server
+     
+	 /*
+	 BACKUP RESTORE GEN USE TO BACKUP ALL DATABASE ONCE
+	 -- Open a new query window with master
+-------------------------------------------------------------------------
+	 Use master
+go
+DECLARE @date CHAR(8)
+SET @date = (SELECT CONVERT(char(8), GETDATE(), 112))
+
+DECLARE @path VARCHAR(125)
+SET @path = 'G:\Backups_QAPWSDB01_45657\' -- Provide the backup path here 
+
+;WITH MoveCmdCTE ( DatabaseName, MoveCmd )
+          AS ( SELECT DISTINCT
+                        DB_NAME(database_id) ,
+                        STUFF((SELECT   ' ' + CHAR(13)+', MOVE ''' + name + ''''
+                                        + CASE Type
+                                            WHEN 0 THEN ' TO ''E:\SQLData\TESTDATA\' -- Provide SQL Data File Path here
+                                            ELSE ' TO ''F:\SQLLogs\TESTDATA\' ---- Provide SQL Log File Path here
+                                          END
+                                        + REVERSE(LEFT(REVERSE(physical_name),
+                                                       CHARINDEX('\',
+                                                              REVERSE(physical_name),
+                                                              1) - 1)) + ''''
+                               FROM     sys.master_files sm1
+                               WHERE    sm1.database_id = sm2.database_ID
+                        FOR   XML PATH('') ,
+                                  TYPE).value('.', 'varchar(max)'), 1, 1, '') AS MoveCmd
+               FROM     sys.master_files sm2
+  )
+SELECT
+	'BACKUP DATABASE [' + name + '] TO DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH COMPRESSION, COPY_ONLY, STATS=5',
+    'RESTORE DATABASE ['+ name + ' ] FROM DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH RECOVERY, REPLACE, STATS=5 ' + movecmdCTE.MoveCmd
+FROM sys.databases d
+	INNER JOIN MoveCMDCTE ON d.name = movecmdcte.databasename
+WHERE d.name not in ('tempdb') --LIKE '%DatabaseName%'
+GO
+
+*/
+
+-- BACKUP RESTORE GEN  filled up one
+-----------------------------------------------------------------
+/*
+Use master
+go
+DECLARE @date CHAR(8)
+SET @date = (SELECT CONVERT(char(8), GETDATE(), 112))
+
+DECLARE @path VARCHAR(125)
+SET @path = '\\SQL01\Mig\' -- Number 1. Provide the backup Share path here 
+
+;WITH MoveCmdCTE ( DatabaseName, MoveCmd )
+          AS ( SELECT DISTINCT
+                        DB_NAME(database_id) ,
+                        STUFF((SELECT   ' ' + CHAR(13)+', MOVE ''' + name + ''''
+                                        + CASE Type
+                                            WHEN 0 THEN ' TO ''E:\MSSQL\' -- Number 2. Provide SQL Data File Path here
+                                            ELSE ' TO ''F:\MSSQL\' -- Number 3. Provide SQL Log File Path here
+                                          END
+                                        + REVERSE(LEFT(REVERSE(physical_name),
+                                                       CHARINDEX('\',
+                                                              REVERSE(physical_name),
+                                                              1) - 1)) + ''''
+                               FROM     sys.master_files sm1
+                               WHERE    sm1.database_id = sm2.database_ID
+                        FOR   XML PATH('') ,
+                                  TYPE).value('.', 'varchar(max)'), 1, 1, '') AS MoveCmd
+               FROM     sys.master_files sm2
+  )
+SELECT
+	'BACKUP DATABASE [' + name + '] TO DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH COMPRESSION, COPY_ONLY, STATS=5',
+    'RESTORE DATABASE ['+ name + ' ] FROM DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH RECOVERY, REPLACE, STATS=5 ' + movecmdCTE.MoveCmd
+FROM sys.databases d
+	INNER JOIN MoveCMDCTE ON d.name = movecmdcte.databasename
+WHERE d.name not in ('tempdb', 'master', 'model', 'msdb') -- Number 4. LIKE '%DatabaseName%'
+GO
+
+*/
+
+
+/****** SCRIPT TO BACK UP AND RESTORE DATABASES FROM ONE SERVER (SQL01)  TO ANOTHER  (SQL02) SERVER AFTER CREATING THE SHARE PATH ******/
+/****** REMEMBER YOU NEED TO EXECUTE TRHE SCRIPT ON THE OLD SERVER QUERY WINDOWS ******/
+
+Use master
+go
+DECLARE @date CHAR(8)
+SET @date = (SELECT CONVERT(char(8), GETDATE(), 112))
+
+DECLARE @path VARCHAR(125)
+SET @path = '\\SQL01\Mig\' -- Number 1. Provide the backup Share path here 
+
+;WITH MoveCmdCTE ( DatabaseName, MoveCmd )
+          AS ( SELECT DISTINCT
+                        DB_NAME(database_id) ,
+                        STUFF((SELECT   ' ' + CHAR(13)+', MOVE ''' + name + ''''
+                                        + CASE Type
+                                            WHEN 0 THEN ' TO ''E:\MSSQL\' -- Number 2. Provide SQL Data File Path here
+                                            ELSE ' TO ''F:\MSSQL\' -- Number 3. Provide SQL Log File Path here
+                                          END
+                                        + REVERSE(LEFT(REVERSE(physical_name),
+                                                       CHARINDEX('\',
+                                                              REVERSE(physical_name),
+                                                              1) - 1)) + ''''
+                               FROM     sys.master_files sm1
+                               WHERE    sm1.database_id = sm2.database_ID
+                        FOR   XML PATH('') ,
+                                  TYPE).value('.', 'varchar(max)'), 1, 1, '') AS MoveCmd
+               FROM     sys.master_files sm2
+  )
+SELECT
+	'BACKUP DATABASE [' + name + '] TO DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH COMPRESSION, COPY_ONLY, STATS=5',
+    'RESTORE DATABASE ['+ name + ' ] FROM DISK = ''' + @path + '' + name + '_COPY_ONLY_' + @date + '.bak'' WITH RECOVERY, REPLACE, STATS=5 ' + movecmdCTE.MoveCmd
+FROM sys.databases d
+	INNER JOIN MoveCMDCTE ON d.name = movecmdcte.databasename
+WHERE d.name not in ('tempdb', 'master', 'model', 'msdb') -- Number 4. LIKE '%DatabaseName%'
+GO
+
+
+/****** AFTER COPY THE BACKUP MESSAGE TO A NEW QUERY WINDOW ON THE OLD SERVER AND EXECUTE IT   ******/
+BACKUP DATABASE [AdventureWorks2016] TO DISK = '\\SQL01\Mig\AdventureWorks2016_COPY_ONLY_20230523.bak' WITH COMPRESSION, COPY_ONLY, STATS=5
+BACKUP DATABASE [BankDB] TO DISK = '\\SQL01\Mig\BankDB_COPY_ONLY_20230523.bak' WITH COMPRESSION, COPY_ONLY, STATS=5
+BACKUP DATABASE [BankDB2] TO DISK = '\\SQL01\Mig\BankDB2_COPY_ONLY_20230523.bak' WITH COMPRESSION, COPY_ONLY, STATS=5
+
+/****** NOW COPY THE RESTORE MESSAGE TO A NEW QUERY WINDOW ON THE NEW SERVER AND EXECUTE IT THIS WILL RESTORE ALL THE DATABASES TO THE NEW SERVER ******/
+RESTORE DATABASE [AdventureWorks2016 ] FROM DISK = '\\SQL01\Mig\AdventureWorks2016_COPY_ONLY_20230523.bak' WITH RECOVERY, REPLACE, STATS=5  , MOVE 'AdventureWorks2016_Data' TO 'E:\MSSQL\AdventureWorks2016_Data.mdf'  , MOVE 'AdventureWorks2016_Log' TO 'F:\MSSQL\AdventureWorks2016_Log.ldf'
+RESTORE DATABASE [BankDB ] FROM DISK = '\\SQL01\Mig\BankDB_COPY_ONLY_20230523.bak' WITH RECOVERY, REPLACE, STATS=5  , MOVE 'BankDB' TO 'E:\MSSQL\BankDB.mdf'  , MOVE 'BankDB_log' TO 'F:\MSSQL\BankDB_log.ldf'
+RESTORE DATABASE [BankDB2 ] FROM DISK = '\\SQL01\Mig\BankDB2_COPY_ONLY_20230523.bak' WITH RECOVERY, REPLACE, STATS=5  , MOVE 'BankDB2' TO 'E:\MSSQL\BankDB2.mdf'  , MOVE 'BankDB2_log' TO 'F:\MSSQL\BankDB2_log.ldf'
+
+
+/****** TO DROP ALL DATABASES ON A SERVER EXECUTE THIS SCRIPT ON MASTER ON NEW QUERY WINDOW ******/
+
+DECLARE @sql NVARCHAR(MAX) = '';
+
+-- Generate the drop database statements
+SELECT @sql = @sql + 'DROP DATABASE [' + name + '];' + CHAR(13)
+FROM sys.databases
+WHERE name NOT IN ('master', 'tempdb', 'model', 'msdb') -- Exclude system databases
+
+-- Execute the drop database statements
+EXEC sp_executesql @sql;
+
+
+
+
+-- STEPS 2.
+----------------------------------------------------------------------------------------
+-- 2. Move Logins
+-- Go to the old server - Security - Logins - Right click on the LoginName - Script Login as - Create To - New Query Editor Window - It will open the new window with SCRIPT to create the Login then Copy the SCRIPT and open new QUERY window on the new SERVER and Execute the script
+/****** SCRIPT TO CREATE LOGIN AND ENABLE LOGIN ******/
+USE [master]
+GO
+
+CREATE LOGIN [Ola] WITH PASSWORD=N'IadWWUrK/xYYRZWBKjcFWvfLUSUPdSClh7L6Jz2FQyU=', DEFAULT_DATABASE=[AdventureWorks2016], DEFAULT_LANGUAGE=[us_english], CHECK_EXPIRATION=OFF, CHECK_POLICY=ON
+GO
+
+ALTER LOGIN [Ola] ENABLE
+GO
+
+
+/****** SCRIPT TO CREATE LOGIN AND DISABLE LOGIN ******/
+USE [master]
+GO
+
+CREATE LOGIN [Ola] WITH PASSWORD=N'IadWWUrK/xYYRZWBKjcFWvfLUSUPdSClh7L6Jz2FQyU=', DEFAULT_DATABASE=[AdventureWorks2016], DEFAULT_LANGUAGE=[us_english], CHECK_EXPIRATION=OFF, CHECK_POLICY=ON
+GO
+
+ALTER LOGIN [Ola] DISABLE
+GO
+
+/****** SCRIPT TO DROP LOGIN  ******/
+
+USE [master]
+GO
+Drop Login Ola
+
+
+/****** SCRIPT TO DROP USER ON DATABASE  ******/
+Use Db1 ;
+GO
+DROP USER UserA ;
+GO
+ 
+
+/****** STEP 2. MOVING ALL LOGINS FROM OLD SERVER (SQL01) TO (SQL02) NEW SERVER  ******/
+/****** METHODS TO MOVE ALL LOGINS FROM ONE SERVER TO ANOTHER SERVER  ******/
+-- Click on the LOGINS from the SECURITY(LOGINS) from the old SERVER SQL01 - Click - VIEW (at the top of the ssms) - Click - OBJECT EXPLORER DETAILS (It will SHOW all the LOGINS on the server(SQL01) on another query window - SELECT ALL THE LOGINS on the window and - Right Click - SCRIPT LOGIN AS - CREATE TO - NEW QUERY EDITOR WINDOW - It will SCRIPT everything for us - Copy the whole SCRIPT - OPEN NEW QUERY WINDOW ON THE NEW SERVER (SQL02) - AND PASTE THE QUERY - THEN EXECUTE IT BUT IT WILL DISABLE ALL THE LOGIN SO YOU NEED TO ENABLE ALL THE LOGINS - below script is the best way to do it from the MICROSOFT
+
+
+/****** BETTER METHOD STEP 2. MOVING ALL LOGINS FROM OLD SERVER (SQL01) TO (SQL02) NEW SERVER  ******/
+-- EXECUTE THIS SCRIPT FROM THE OLD SERVER (SQL01)
+
+-------------------------------------------------------------------------------------------------------------
+-- sp_help_revlogin script
+-- TRANSFER LOGINS AND PASSWORDS BETWEEN INSTANCES -- SQL SERVER
+-- https://learn.microsoft.com/en-us/troubleshoot/sql/database-engine/security/transfer-logins-passwords-between-instances
+-- it will create the store procedure AFTER you EXECUTE it and then follow the step 2 ie EXEC SP_help_revlogin
+-- This script creates two stored procedures in the master database. 
+-- The procedures are named 
+   -- 1. sp_hexadecimal and
+
+USE [master]
+  GO
+  IF OBJECT_ID ('sp_hexadecimal') IS NOT NULL
+  DROP PROCEDURE sp_hexadecimal
+  GO
+  CREATE PROCEDURE [dbo].[sp_hexadecimal]
+  (
+      @binvalue varbinary(256),
+      @hexvalue varchar (514) OUTPUT
+  )
+  AS
+  BEGIN
+      DECLARE @charvalue varchar (514)
+      DECLARE @i int
+      DECLARE @length int
+      DECLARE @hexstring char(16)
+      SELECT @charvalue = '0x'
+      SELECT @i = 1
+      SELECT @length = DATALENGTH (@binvalue)
+      SELECT @hexstring = '0123456789ABCDEF'
+
+      WHILE (@i <= @length)
+      BEGIN
+            DECLARE @tempint int
+            DECLARE @firstint int
+            DECLARE @secondint int
+
+            SELECT @tempint = CONVERT(int, SUBSTRING(@binvalue,@i,1))
+            SELECT @firstint = FLOOR(@tempint/16)
+            SELECT @secondint = @tempint - (@firstint*16)
+            SELECT @charvalue = @charvalue + SUBSTRING(@hexstring, @firstint+1, 1) + SUBSTRING(@hexstring, @secondint+1, 1)
+
+            SELECT @i = @i + 1
+      END 
+      SELECT @hexvalue = @charvalue
+  END
+  go
+  IF OBJECT_ID ('sp_help_revlogin') IS NOT NULL
+  DROP PROCEDURE sp_help_revlogin
+  GO
+  CREATE PROCEDURE [dbo].[sp_help_revlogin]   
+  (
+      @login_name sysname = NULL 
+  )
+  AS
+  BEGIN
+      DECLARE @name                     SYSNAME
+      DECLARE @type                     VARCHAR (1)
+      DECLARE @hasaccess                INT
+      DECLARE @denylogin                INT
+      DECLARE @is_disabled              INT
+      DECLARE @PWD_varbinary            VARBINARY (256)
+      DECLARE @PWD_string               VARCHAR (514)
+      DECLARE @SID_varbinary            VARBINARY (85)
+      DECLARE @SID_string               VARCHAR (514)
+      DECLARE @tmpstr                   VARCHAR (1024)
+      DECLARE @is_policy_checked        VARCHAR (3)
+      DECLARE @is_expiration_checked    VARCHAR (3)
+      Declare @Prefix                   VARCHAR(255)
+      DECLARE @defaultdb                SYSNAME
+      DECLARE @defaultlanguage          SYSNAME     
+      DECLARE @tmpstrRole               VARCHAR (1024)
+
+  IF (@login_name IS NULL)
+  BEGIN
+      DECLARE login_curs CURSOR 
+      FOR 
+          SELECT p.sid, p.name, p.type, p.is_disabled, p.default_database_name, l.hasaccess, l.denylogin, p.default_language_name  
+          FROM  sys.server_principals p 
+          LEFT JOIN sys.syslogins     l ON ( l.name = p.name ) 
+          WHERE p.type IN ( 'S', 'G', 'U' ) 
+            AND p.name <> 'sa'
+          ORDER BY p.name
+  END
+  ELSE
+          DECLARE login_curs CURSOR 
+          FOR 
+              SELECT p.sid, p.name, p.type, p.is_disabled, p.default_database_name, l.hasaccess, l.denylogin, p.default_language_name  
+              FROM  sys.server_principals p 
+              LEFT JOIN sys.syslogins        l ON ( l.name = p.name ) 
+              WHERE p.type IN ( 'S', 'G', 'U' ) 
+                AND p.name = @login_name
+              ORDER BY p.name
+
+          OPEN login_curs 
+          FETCH NEXT FROM login_curs INTO @SID_varbinary, @name, @type, @is_disabled, @defaultdb, @hasaccess, @denylogin, @defaultlanguage 
+          IF (@@fetch_status = -1)
+          BEGIN
+                PRINT 'No login(s) found.'
+                CLOSE login_curs
+                DEALLOCATE login_curs
+                RETURN -1
+          END
+
+          SET @tmpstr = '/* sp_help_revlogin script '
+          PRINT @tmpstr
+
+          SET @tmpstr = '** Generated ' + CONVERT (varchar, GETDATE()) + ' on ' + @@SERVERNAME + ' */'
+
+          PRINT @tmpstr
+          PRINT ''
+
+          WHILE (@@fetch_status <> -1)
+          BEGIN
+            IF (@@fetch_status <> -2)
+            BEGIN
+                  PRINT ''
+
+                  SET @tmpstr = '-- Login: ' + @name
+
+                  PRINT @tmpstr
+
+                  SET @tmpstr='IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = N'''+@name+''')
+                  BEGIN'
+                  Print @tmpstr 
+
+                  IF (@type IN ( 'G', 'U'))
+                  BEGIN -- NT authenticated account/group 
+                    SET @tmpstr = 'CREATE LOGIN ' + QUOTENAME( @name ) + ' FROM WINDOWS WITH DEFAULT_DATABASE = [' + @defaultdb + ']' + ', DEFAULT_LANGUAGE = [' + @defaultlanguage + ']'
+                  END
+                  ELSE 
+                  BEGIN -- SQL Server authentication
+                          -- obtain password and sid
+                          SET @PWD_varbinary = CAST( LOGINPROPERTY( @name, 'PasswordHash' ) AS varbinary (256) )
+
+                          EXEC sp_hexadecimal @PWD_varbinary, @PWD_string OUT
+                          EXEC sp_hexadecimal @SID_varbinary,@SID_string OUT
+
+                          -- obtain password policy state
+                          SELECT @is_policy_checked     = CASE is_policy_checked WHEN 1 THEN 'ON' WHEN 0 THEN 'OFF' ELSE NULL END 
+                          FROM sys.sql_logins 
+                          WHERE name = @name
+
+                          SELECT @is_expiration_checked = CASE is_expiration_checked WHEN 1 THEN 'ON' WHEN 0 THEN 'OFF' ELSE NULL END 
+                          FROM sys.sql_logins 
+                          WHERE name = @name
+
+                          SET @tmpstr = 'CREATE LOGIN ' + QUOTENAME( @name ) + ' WITH PASSWORD = ' + @PWD_string + ' HASHED, SID = ' 
+                                          + @SID_string + ', DEFAULT_DATABASE = [' + @defaultdb + ']' + ', DEFAULT_LANGUAGE = [' + @defaultlanguage + ']'
+
+                          IF ( @is_policy_checked IS NOT NULL )
+                          BEGIN
+                            SET @tmpstr = @tmpstr + ', CHECK_POLICY = ' + @is_policy_checked
+                          END
+
+                          IF ( @is_expiration_checked IS NOT NULL )
+                          BEGIN
+                            SET @tmpstr = @tmpstr + ', CHECK_EXPIRATION = ' + @is_expiration_checked
+                          END
+          END
+
+          IF (@denylogin = 1)
+          BEGIN -- login is denied access
+              SET @tmpstr = @tmpstr + '; DENY CONNECT SQL TO ' + QUOTENAME( @name )
+          END
+          ELSE IF (@hasaccess = 0)
+          BEGIN -- login exists but does not have access
+              SET @tmpstr = @tmpstr + '; REVOKE CONNECT SQL TO ' + QUOTENAME( @name )
+          END
+          IF (@is_disabled = 1)
+          BEGIN -- login is disabled
+              SET @tmpstr = @tmpstr + '; ALTER LOGIN ' + QUOTENAME( @name ) + ' DISABLE'
+          END 
+
+          SET @Prefix = '
+          EXEC master.dbo.sp_addsrvrolemember @loginame='''
+
+          SET @tmpstrRole=''
+
+          SELECT @tmpstrRole = @tmpstrRole
+              + CASE WHEN sysadmin        = 1 THEN @Prefix + [LoginName] + ''', @rolename=''sysadmin'''        ELSE '' END
+              + CASE WHEN securityadmin   = 1 THEN @Prefix + [LoginName] + ''', @rolename=''securityadmin'''   ELSE '' END
+              + CASE WHEN serveradmin     = 1 THEN @Prefix + [LoginName] + ''', @rolename=''serveradmin'''     ELSE '' END
+              + CASE WHEN setupadmin      = 1 THEN @Prefix + [LoginName] + ''', @rolename=''setupadmin'''      ELSE '' END
+              + CASE WHEN processadmin    = 1 THEN @Prefix + [LoginName] + ''', @rolename=''processadmin'''    ELSE '' END
+              + CASE WHEN diskadmin       = 1 THEN @Prefix + [LoginName] + ''', @rolename=''diskadmin'''       ELSE '' END
+              + CASE WHEN dbcreator       = 1 THEN @Prefix + [LoginName] + ''', @rolename=''dbcreator'''       ELSE '' END
+              + CASE WHEN bulkadmin       = 1 THEN @Prefix + [LoginName] + ''', @rolename=''bulkadmin'''       ELSE '' END
+            FROM (
+                      SELECT CONVERT(VARCHAR(100),SUSER_SNAME(sid)) AS [LoginName],
+                              sysadmin,
+                              securityadmin,
+                              serveradmin,
+                              setupadmin,
+                              processadmin,
+                              diskadmin,
+                              dbcreator,
+                              bulkadmin
+                      FROM sys.syslogins
+                      WHERE (       sysadmin<>0
+                              OR    securityadmin<>0
+                              OR    serveradmin<>0
+                              OR    setupadmin <>0
+                              OR    processadmin <>0
+                              OR    diskadmin<>0
+                              OR    dbcreator<>0
+                              OR    bulkadmin<>0
+                          ) 
+                          AND name=@name 
+                ) L 
+
+              PRINT @tmpstr
+              PRINT @tmpstrRole
+              PRINT 'END'
+          END 
+          FETCH NEXT FROM login_curs INTO @SID_varbinary, @name, @type, @is_disabled, @defaultdb, @hasaccess, @denylogin, @defaultlanguage 
+      END
+      CLOSE login_curs
+      DEALLOCATE login_curs
+      RETURN 0
+  END
+
+-- STEPS 2. EXECUTE THIS SCRIPT AFTER THE STEP 1
+-- EXECUTE THIS SCRIPT ON THE OLD SERVER (SQL01) NEW QUERY WINDOW 
+   -- 2. sp_help_revlogin .
+  -- EXEC sp_help_revlogin
+
+EXEC sp_help_revlogin -- Copy all the script after execute it and execute the script on the NEW SERVER (SQL02)
+-- AFTER EXECUTED THE SCRIPT IT WILL CREATE ALL THE LOGINS ON THE NEW SERVER (SQL02)
+
+
+
+-- STEPS 3. JOBS -- Click on the - JOBS (ON THE OLD SERVER SQL01 )- Click - VIEW - OBJECT EXPLORER DETAILS - COPY ALL THE SCRIPT ON THE QUERY WINDOW - AND EXECUTE IT ON THE NEW SERVER (SQL02) - NEW QUERY WINDOW - IT WILL CREATE ALL THE JOBS on the NEW SERVER
+
+
+-- 4. LINKED SERVERS... RECONFIGURE
+
+
+-- On the CUT OVER window day. (Day the Application Teams and DBAs stop the old server and move to the new server)
+-- What you can do before the date of CUT OVER
+   -- 1. You can move the all the LOGINS before the CUT OVER date
+   -- 2. You can move all the JOBS before the CUT OVER date
+
+-- ON DAY OF CUT OVER
+   -- 1. You need to migrate the database from old server to the new server
+
+-- CUT OVER preparation in the company
+   -- 1. Application Team will temporarily stop the application from making modification bcos if the app is making modification through the database then what ever BACKUP you take will never carry everything as at the point in time 
+   -- 2. DBAs will take database backup and restore to new server
+   -- 3. Application Team will change the connection string to point to new server
+   -- 4. If there is a problem with the new server APP  team will roll back to the connection to the old server
+
+-- What if the CUTOVER window giving is so small like 15min on the DAY of CUTOVER WINDOW AND THE APP can not be down more than 15min
+
+      -- 1. Imagine the size of databases on old server is 1TB which is going to take an hour 
+	  -- 2. Restoring is also going to take an hour into the new server which is not possible to achieve in 15 min
+
+-- What to do. So you have to do things differently
+   -- Assume CUTOVER window is 7am on Saturday what to do is this BEFORE the time of CUTOVER window which is just 15min
+   -- 1. On Friday you would have taking the FULL BACKUP with NO RECOVERY MODE of the databases from the old DATABASE to the new DATABASE
+   -- 2. Initiate LOG SHIPPING between OLD DATABASE to NEW DATABASE dont forget LOG SHIPPING jobs LS BACKUP, LS COPY, LS RESTORE and your DATABASE in the new server will be NO RECOVERY MODE or STANDBY MODE and since the CUTOVER window is SATURDAY 7am before, so did Application not in use YES its in use and that is why we are using LOG SHIPPING so when you take BACKUP and RESTORE it on the NEW SERVER you now INITIATE TRANSACTION LOG SHIPPING so as people are making changes to the OLD DATABASE, LS BACKUP will be COPY it from the OLD DATABASE and move it to the NEW DATABASE on the date of CUTOVER window APPLICATION want to stop the stop the APPLICATION and immediately the STOP the APPLICATION you will just run the LAST LS BACKUP, run LAST LS COPY, run the LAST LS RESTORE so less than 15min everything from the old databases would have move to the new databases  
+
+   -- So on SATURDAY at 7am the APPLICATION TEAM will stop the APPLICATION connection string of the old database and once it stop then RUN the LAST LS BACKUP, run LAST LS COPY, run the LAST LS RESTORE on the new database and the bring the APPLICATION back online tell the APPLICATION TEAM to connect the APP string to the new database
+   
+   -- When you dealing with LARGE DATABASE you need to implement LOG SHIPPING 
+   -- THERE IS SCRIPT TO DO LOG SHIPPING FOR ALL THE DATABASES ON YOUR SERVER ONCE VERY EASY
+
+
+
+-- 5. REPLICATION -- which can only be done by => RE - CONFIGURE  
+--------------------------------------------------------------------------------------
+
+
+
+-- UPGRADE SQL SERVER from SQL SERVER 2016 TO SQL SERVER 2017 OR SQL SERVER 2019
+-- To check which VERSION of SQL Server is running => Select @@Version - It will give you which version is running
+-- After download. Make sure you RUN it on the SQL Server you want to UPGRADE 
+-- https://www.microsoft.com/en-us/evalcenter/download-sql-server-2022
+-- Double click on the DOWNLOAD file after downloaded - Click DOWNLOAD MEDIA - Select ISO(1109) - Select Download location - Click DOWNLOAD - After - Right on the ISO file - Mount - Double click on the - Setup - Installation - Upgrade from a previouse version of SQL Server - Select - EVALUATION - Next - Accept the aggrement - Next - Next - Next - Next - Next - Upgrade - After is done
+-- You will need to RESTART YOUR COMPUTER for the effect to take place
+
+-- Before you RESTART check the Version First - Select @@Version => Microsoft SQL Server 2022 (RTM).16.0.1000 6(X..)
+-- Now RESTART
+
+
+-- INPLACE UPGRADE
+-------------------------------------------------------------------------------------
+-- What must be done before when you want to do INPLACE UPGRADE because if anything goes wrong it can corrupt your serve or database
+   -- 1. Please BACKUP your DATABASE (Both SYSTEM and USER DATABASE)
+   -- 2. Ask your SYS ADMINS to take SNAPSHOT OF THE SERVER before the UPGRADE
+   -- 3. On the CUTOVER window the APP team will stop the APPLICATION 
+   -- 4. Go ahead with your INPLACE
+      -- IN CASE SOMETHING GOES WRONG
+	     -- ROLLBACK -- Is not as easy
+		    -- 1. Uinstall install the upgrade
+
+-- under MIGRATION strategy you can always use
+   -- 1. Always On
+   -- 2. Replication - But that replication would affect only the TABLE LEVEL it does not affect any other things on the database
+
+
+
+-- Ticketing on Develop environment
+  -- ServiceNow
+  -- Jira
+  -- Servicedesk
+  -- cherwell
+  -- Saleforce
+
+
+
+-- ETL => EXTRACT, TRANSFORM, and LOAD => 
+--------------------------------------------------------------------------------------------
+-- There are two things comes up alots
+  -- 1. SSIS: SQL SERVER INTEGRATION SERVICES => Is used for ETL purpose 
+  -- 2. SSRS: SQL SERVER REPORTING SERVICES => Is used for reporting data from data warehouse and its our job to set it up
+  -- 3. SSAS: SQL SERVER ANALYSIS SERVICES =>
+
+   -- ETL => In database Administrator there are at some point we have to move DATA from point A to point B
+   -- EXTRACT => The process of moving from point A which is the source is know as EXTRACT(E)
+   -- TRANSFORM => Getting the data from point A and TRANSFORM it from one format to another format and get it to the LOAD which is point B => Getting to point B which is your LOAD so you are EXTRACTING and getting it to your Destination with different format which is LOAD
+   -- LOAD => Final Destination
+
+   -- In summary extracting data for example a data with Fname and Lname on different column and TRANSFORM it to a FULLNAME without separate column to the LOAD which is not in same format from the SOURCE and TRANSFORM is responsible that.
+
+   -- ETL => Extract data from the source and TRANSFORM it and LOAD the data to a new destination and the TOOL that helps us to TRANSFORM it is called INTEGRATION SERVICES which helps us to create a package to handle the whole process
+
+   -- Source(EXCEL) -- Package(Transform) -- SqlServer DB
+
+   -- QUESTION 
+   -- Have you ever work on SSIS before => say YES well I have create basic package SSIS packages that is extracting data from our transactional database and is loading into our data warehouse
+   -- Yes you know SSIS is a SQL SERVER INTEGRATION SERVICES you know, I have set up SSIS, install it,I have created a package that is extracting data from our transactional database as a matter of fact we have this business unit that use to give us excel file every Friday so I have created a package that will extract data from that file and load it into our data warehouse and I set it up as a job so it will run on a scheldule, so I have created basic SSIS that, I mean is not my responsible ton create it, I mean I can create it but I have other team member that normally do that. and is same thing with REPOTING SERVICES IS MY JOB TO SET UP reporting server, set the configuration and help the reporting team to connecting to it but some times I have created basic SSRS before even though is not my job I can create it basic SSRS report you know 
+   -- Did DBA help in deploying SSIS package - Yes the DBA help team in deploy SSIS packages
+
+
+
+
+   -- Have you ever work on SSIS before => say YES well I have create basic package SSIS packages that is extracting data from our transactional database and is loading it into our database SQL Server
+   -- SSIS -- support multiple sources and multiple destination eg DBASE TO DBASE or Data to EXCELL. So it help us move data from one point to another and not just moving data alone it also help us transform the data from one format to another format 
+
+   -- ELT => EXTRACT, LOAD and TRANSFORM => Under ELT it first extract, load and the transform the data 
+   -- Data Source or Databases or CRM or Web Events  is usually TRANSACTIONAL DATAS while Destination is the DATA WAREHOUSE(DW)
+
+   -- Another Tool is =>
+   -- DATA VISUALIZATION
+   ------------
+   -- POWER BI => Microsoft want to replace SSRS with POWERbi because microsoft own both of them 
+   -- SSRS, POWERbi, Tableau -  Help in DATA VISUALIZATION in very fantasic way
+
+
+   -- SSRS -- REPORTING - own by MICROSOFT
+   -- Powerbi - --------------by MICROSOFT
+   -- Tableau ---
+
+      -- SSIS -- INTEGRATION - own by MICROSOFT
+	  -- PENTAHOE
+	  -- QLICK REPLICATE
+
+	  -- In the CLOUD
+	  ----------------
+	  -- Azure Data Factory
+	  -- AzureSynapse
+
+
+
+
+-- CLASS - 21 - Database Refresh - DBCC check DB - How To Fix Database Corruption - Move Database File From One Location To Another -How To Shrink Transaction Log File - CMS - Setup Linked Server - Import And Export Table - SQL Jobs - Setup Extended Event Trace -AlwaysOn Review - Basic PowerShell Command - Interview Preparation
+------------------------------------------------------------------------------------------------------------------------------------
+
+-- DATABASE REFRESH
+-- 3 Types of ENVIRONMENT
+   -- 1. Prod/Production/Real Live Environment => Where live activity is happening
+   -- 2. NonProd Environment / DEV => 
+         -- is a test carried out by the software developers who made the functions.
+         -- Customer / Users are not interact with it, it usually use for testing, anything goes to the prod have to be test extensively on a non prod before they deploy the cahnges to the prod environment
+
+-- NonProd: Divided into two stages
+   -- 1. DEV/Test => This where all initial development happening
+
+   -- 2. STG(Stage)/QA => is a test for the interface between different modules which is a small part of a single feature. is used for testing and quality assurance purposes before deploying software or system changes to the live or production environment.
+  
+   -- 3. SIT (System Integration Testing) => It is a level of software testing that focuses on verifying the interaction and integration between different components or systems. SIT is performed after the individual components have been tested and aims to ensure that they work together as expected.
+
+   -- 3. UAT =>  is carried out by client and probably a small group of registered tester. Client can use the TestFlight and Play Store to distribute testing app to register testers remotely. A lots of feedback on feature and user experience can be gathered at this stage.
+
+   -- 4. PROD => is the stage where app has been publicly released. Much larger group of user can use and test on the new features. Unexpected bugs and issues can be found and reported by Google tools Crashlytics. UI/UX designer and developers can enhance the app by these information.
+
+   -- CAB: Change Advisory Board => is a group or committee responsible for reviewing and approving proposed changes to an organization's IT infrastructure or services. The CAB ensures that changes are assessed for potential risks, impact, and feasibility before they are implemented
+
+
+
+-- Chg1257 => Deploy primary key to employee table
+-- 1. Will cause downtime, roll back steps.
+
+-- DATABASE REFRESH
+-- 
+   -- 1. Take a BACKUP of the PROD database (it will come with production Users and their permissions that is why you need to follow step 2) 
+   -- 2. Make sure you SCRIPT OUT users and permissions on the NonProd before you Restore
+   -- 3. Restore database backup to NonProd
+   -- 4. Apply the script you generated on step 2
+
+   -- IN PRATICAL => SQL01 is PROD / SQL02 is DEV
+
+   -- On SQL01(Prod) - AdventureWorks2016 - Security - Users - (You will see all the user there) 
+   -- On SQL02(Dev) - open New Query Window - Create Database [AdventureWorks2016]
+   Create Database [AdventureWorks2016]
+   -- On SQL02(Dev) - Create a Login(user) - SQL02 - Security - Logins - Right Click on LOGINS - New Login... - Login name (SQLDeveloper) - Select (SQL Server authentication) and give password(1234@Admin) - Uncheck(User must change password) - User Mapping(Select - AdventureWorks2016 - db_datareader - db_datawriter - public) - Ok
+
+   -- Create another LOGIN on SQL02
+   -- On SQL02(Dev) - Create a Login(user) - SQL02 - Security - Logins - Right click on the Logins - New Login... - Login name (Tester) - Select (SQL Server authentication) and give password(1234@Admin) - Uncheck(User must change password) - Uncheck(User must change password) - User Mapping(Select - AdventureWorks2016 - db_datareader - public) - Ok
+
+   -- Go to SQL01(Prod) - [AdventureWorks2016] - Security - Users (You will see will have Ola, SQL/Dipo, Tkenny, Uche on the database) - But on SQL02(Dev) check who are the people who have access to the database - [AdventureWorks2016] - Security - Users (You will see will have SQLDeveloper, Tester are the people that have access to this database [AdventureWorks2016]) 
+
+   -- Now if you want to do DATABASE REFRESH 
+   -- Open New Query Window on SQL01(Prod) 
+   -- Create Share path on your Backup Drive \\Sql01\mssql\
+   Use master
+   Backup database [AdventureWorks2016] to Disk = N'\\Sql01\mssql\AdventureWorks2016Full.bak' with Compression, stats = 5;
+-- Execute
+     
+-- NOTE! => Before you RESTORE please SCRIPT OUT THE USERS AND PERMISSION on SQL02(Dev) below is the script to do it
+   -- Now let RESTORE the Database BACKUP that we took on SQL01(Prod) on SQL02(Dev) let use GUI
+
+   -- Copy the share path -- \\Sql01\mssql\
+
+   -- 2. Make sure you SCRIPT OUT users and permissions on the NonProd before you Restore in other not to overwrite the USERS(Tester, SQLDeveloper) to prevent that not to happen you need to SCRIPT OUT users
+   -- The Database [AdventureWorks2016] is already there on SQL02(Dev)
+
+   -- Execute this Script to SCRIPT OUT USERS AND PERMISSION on NEW QUERY WINDOW from SQL02(Dev) and make sure you execute it on the DATABASE ie change master to the Database you want to Restore it to ie USE AdventureWorks2016 
+
+
+-- https://dba.stackexchange.com/questions/190475/scripting-out-database-user-level-permissions
+
+/*
+This script will script the role members for all roles on the database.
+
+This is useful for scripting permissions in a development environment before refreshing
+development with a copy of production.  This will allow us to easily ensure
+development permissions are not lost during a prod to dev restoration. 
+Author: S. Kusen
+*/
+/****1. Script out the permissions using this script in the lower environment.***/
+/*********   DB CONTEXT STATEMENT    *********/
+/*********************************************/
+
+
+DECLARE 
+    @sql VARCHAR(2048)
+    ,@sort INT 
+
+DECLARE tmp CURSOR FOR
+
+
+/*********************************************/
+/*********   DB CONTEXT STATEMENT    *********/
+/*********************************************/
+SELECT '-- [-- DB CONTEXT --] --' AS [-- SQL STATEMENTS --],
+        1 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  'USE' + SPACE(1) + QUOTENAME(DB_NAME()) AS [-- SQL STATEMENTS --],
+        1 AS [-- RESULT ORDER HOLDER --]
+
+UNION
+
+SELECT '' AS [-- SQL STATEMENTS --],
+        2 AS [-- RESULT ORDER HOLDER --]
+
+UNION
+
+/*********************************************/
+/*********     DB USER CREATION      *********/
+/*********************************************/
+
+SELECT '-- [-- DB USERS --] --' AS [-- SQL STATEMENTS --],
+        3 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  'IF NOT EXISTS (SELECT [name] FROM sys.database_principals WHERE [name] = ' + SPACE(1) + '''' + [name] + '''' + ') BEGIN CREATE USER ' + SPACE(1) + QUOTENAME([name]) + ' FOR LOGIN ' + QUOTENAME([name]) + ' WITH DEFAULT_SCHEMA = ' + QUOTENAME([default_schema_name]) + SPACE(1) + 'END; ' AS [-- SQL STATEMENTS --],
+        4 AS [-- RESULT ORDER HOLDER --]
+FROM    sys.database_principals AS rm
+WHERE [type] IN ('U', 'S', 'G') -- windows users, sql users, windows groups
+
+UNION
+
+/*********************************************/
+/*********    DB ROLE PERMISSIONS    *********/
+/*********************************************/
+SELECT '-- [-- DB ROLES --] --' AS [-- SQL STATEMENTS --],
+        5 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  'EXEC sp_addrolemember @rolename ='
+    + SPACE(1) + QUOTENAME(USER_NAME(rm.role_principal_id), '''') + ', @membername =' + SPACE(1) + QUOTENAME(USER_NAME(rm.member_principal_id), '''') AS [-- SQL STATEMENTS --],
+        6 AS [-- RESULT ORDER HOLDER --]
+FROM    sys.database_role_members AS rm
+WHERE   USER_NAME(rm.member_principal_id) IN (  
+                                                --get user names on the database
+                                                SELECT [name]
+                                                FROM sys.database_principals
+                                                WHERE [principal_id] > 4 -- 0 to 4 are system users/schemas
+                                                and [type] IN ('G', 'S', 'U') -- S = SQL user, U = Windows user, G = Windows group
+                                              )
+--ORDER BY rm.role_principal_id ASC
+
+
+UNION
+
+SELECT '' AS [-- SQL STATEMENTS --],
+        7 AS [-- RESULT ORDER HOLDER --]
+
+UNION
+
+/*********************************************/
+/*********  OBJECT LEVEL PERMISSIONS *********/
+/*********************************************/
+SELECT '-- [-- OBJECT LEVEL PERMISSIONS --] --' AS [-- SQL STATEMENTS --],
+        8 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  CASE 
+            WHEN perm.state <> 'W' THEN perm.state_desc 
+            ELSE 'GRANT'
+        END
+        + SPACE(1) + perm.permission_name + SPACE(1) + 'ON ' + QUOTENAME(SCHEMA_NAME(obj.schema_id)) + '.' + QUOTENAME(obj.name) --select, execute, etc on specific objects
+        + CASE
+                WHEN cl.column_id IS NULL THEN SPACE(0)
+                ELSE '(' + QUOTENAME(cl.name) + ')'
+          END
+        + SPACE(1) + 'TO' + SPACE(1) + QUOTENAME(USER_NAME(usr.principal_id)) COLLATE database_default
+        + CASE 
+                WHEN perm.state <> 'W' THEN SPACE(0)
+                ELSE SPACE(1) + 'WITH GRANT OPTION'
+          END
+            AS [-- SQL STATEMENTS --],
+        9 AS [-- RESULT ORDER HOLDER --]
+FROM    
+    sys.database_permissions AS perm
+        INNER JOIN
+    sys.objects AS obj
+            ON perm.major_id = obj.[object_id]
+        INNER JOIN
+    sys.database_principals AS usr
+            ON perm.grantee_principal_id = usr.principal_id
+        LEFT JOIN
+    sys.columns AS cl
+            ON cl.column_id = perm.minor_id AND cl.[object_id] = perm.major_id
+--WHERE usr.name = @OldUser
+--ORDER BY perm.permission_name ASC, perm.state_desc ASC
+
+
+
+UNION
+
+SELECT '' AS [-- SQL STATEMENTS --],
+    10 AS [-- RESULT ORDER HOLDER --]
+
+UNION
+
+/*********************************************/
+/*********    DB LEVEL PERMISSIONS   *********/
+/*********************************************/
+SELECT '-- [--DB LEVEL PERMISSIONS --] --' AS [-- SQL STATEMENTS --],
+        11 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  CASE 
+            WHEN perm.state <> 'W' THEN perm.state_desc --W=Grant With Grant Option
+            ELSE 'GRANT'
+        END
+    + SPACE(1) + perm.permission_name --CONNECT, etc
+    + SPACE(1) + 'TO' + SPACE(1) + '[' + USER_NAME(usr.principal_id) + ']' COLLATE database_default --TO <user name>
+    + CASE 
+            WHEN perm.state <> 'W' THEN SPACE(0) 
+            ELSE SPACE(1) + 'WITH GRANT OPTION' 
+      END
+        AS [-- SQL STATEMENTS --],
+        12 AS [-- RESULT ORDER HOLDER --]
+FROM    sys.database_permissions AS perm
+    INNER JOIN
+    sys.database_principals AS usr
+    ON perm.grantee_principal_id = usr.principal_id
+--WHERE usr.name = @OldUser
+
+WHERE   [perm].[major_id] = 0
+    AND [usr].[principal_id] > 4 -- 0 to 4 are system users/schemas
+    AND [usr].[type] IN ('G', 'S', 'U') -- S = SQL user, U = Windows user, G = Windows group
+
+UNION
+
+SELECT '' AS [-- SQL STATEMENTS --],
+        13 AS [-- RESULT ORDER HOLDER --]
+
+UNION 
+
+SELECT '-- [--DB LEVEL SCHEMA PERMISSIONS --] --' AS [-- SQL STATEMENTS --],
+        14 AS [-- RESULT ORDER HOLDER --]
+UNION
+SELECT  CASE
+            WHEN perm.state <> 'W' THEN perm.state_desc --W=Grant With Grant Option
+            ELSE 'GRANT'
+            END
+                + SPACE(1) + perm.permission_name --CONNECT, etc
+                + SPACE(1) + 'ON' + SPACE(1) + class_desc + '::' COLLATE database_default --TO <user name>
+                + QUOTENAME(SCHEMA_NAME(major_id))
+                + SPACE(1) + 'TO' + SPACE(1) + QUOTENAME(USER_NAME(grantee_principal_id)) COLLATE database_default
+                + CASE
+                    WHEN perm.state <> 'W' THEN SPACE(0)
+                    ELSE SPACE(1) + 'WITH GRANT OPTION'
+                    END
+            AS [-- SQL STATEMENTS --],
+        15 AS [-- RESULT ORDER HOLDER --]
+from sys.database_permissions AS perm
+    inner join sys.schemas s
+        on perm.major_id = s.schema_id
+    inner join sys.database_principals dbprin
+        on perm.grantee_principal_id = dbprin.principal_id
+WHERE class = 3 --class 3 = schema
+
+
+ORDER BY [-- RESULT ORDER HOLDER --]
+
+
+OPEN tmp
+FETCH NEXT FROM tmp INTO @sql, @sort
+WHILE @@FETCH_STATUS = 0
+BEGIN
+        PRINT @sql
+        FETCH NEXT FROM tmp INTO @sql, @sort    
+END
+
+CLOSE tmp
+DEALLOCATE tmp 
+
+
+-- Now COPY the whole MESSAGES(Output) under the QUERY Window you executed the above script to NOTEPAD to save it first
+-- e.g
+/*
+SCRIPTOUT USERS AND PERMISSION RESULT => saved on NOTEPAD IN Document folder -- scriptoutuserspermissionfromSQL02(DEV)
+
+*/
+
+-- Copy the share path -- \\Sql01\mssql\
+-- Step 3 NOW LET RSTORE BY GUI
+-- Right click on DATABASES from SQL02(Dev) - Restore Database... - Select (Device) -Eclipse btn - Add - Paste the Share path  (\\Sql01\mssql\) - Enter - Select the database AdventureWorks2016Full.bak - Ok - Ok - Go to => Files - Relocate all files to folder - Look up the window it will show a WARNING message (A tail-log backup of the ......) - Go to - OPTIONS - Restore options - Select (Overwrite the existing database(WITH REPLACE) - Tail-Log Backup - Uncheck (Take tail-log backup before restore) - Select (Close existing connections to destination database (This may leave the destination databases in single-user mode) - Ok - Ok
+
+-- Now it bring all the USERS from the PROD ENVIRONMENT (SQL01) back on
+-- NOTE!  What happen to the Users that are there before SQLDeveloper and Tester
+
+-- That is why will scripted them out 
+-- Now copy the saved RESULT from the SCRIPT OUT USER AND PERMISSION 
+
+-- Open new Query on SQL02(Dev) and paste the RESULT and execute it
+-- Immediately you Execute the RESULT, go back to the Database and REFRESH it
+-- Open the database [AdventureWorks2016] on the SQL02(Dev) - Security - Users - all is back online, It would not Delete the Prod Users but it will bring back those that have access to it before. 
+-- All the Users that bring on from SQL01(Pro) they will become ORPHAN USERS
+
+-- ORPHAN USERS => Is a user that does not have a corresponding logins
+-- Then should will delete the orphan, you dont need to because they would not have access to the database anyways
+-- QUESTION - What happen to the USERS that came down from Production ENvironment to the Developer Environment => They become ORPHAN USER and you can drop them
+
+-- Script to list Orphan user in a database sql server from PROD SQL01 to Dev SQL02
+Use [AdventureWorks2016];
+
+Exec sp_change_users_login @Action='Report';
+
+/*
+Ola    0x3A12E91EBC0B2543AE2743611BF685A8
+Tkenny 0x94442B295AFD1240A29743463E7025E7
+Uche   0xCFFF0C3BD76FA944BCC7A336B0AE2FF7
+*/
+
+-- If you want to DROP the USERS
+Drop user Ola
+Drop user Tkenny
+Drop user Uche
+
+-- Done
+-- But just leave the Orphan Users because the users dont have access to the database and if you like you can delete them
+
+
+-- How To Fix Database Corruption 
+------------------------------------------------------------------------------
+-- DBCC CHECK DATABASE => Use to chack database Integrity
+--------------------------------------------------------------------------------------------------------------------------
+-- Database Console Command (DBCC) CHECKDB is used to identify errors in the SQL Server database.
+
+DBCC CheckDB (AdventureWorks2016)
+
+-- CHECKDB found 0 allocation errors and 0 consistency errors in database 'AdventureWorks2016'.
+-- DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+
+
+-- Question
+  -- How do you resolve database corruption
+  -- How do you fix a corrupt database
+  -- What do you do when you database is in recovery pending
+  -- What do you do when your database is in suspect mode
+  -- What do you do when your database is in Emergency Mode
+
+  -- There number of QUERY to run when you facing database corruption
+  -- STEPS TO TAKE
+
+-- Step 1 - Execute this Query 1
+ALTER DATABASE [DBName] SET EMERGENCY;
+GO
+
+-- Step 2 - Execute this Query 2
+ALTER DATABASE [DBName] set single_user
+GO
+
+-- Step 3 - Execute this Query 3
+DBCC CHECKDB ([DBName], REPAIR_ALLOW_DATA_LOSS) WITH ALL_ERRORMSGS;
+GO
+
+-- Step 4 - Execute this Query 4
+ALTER DATABASE [DBName] set multi_user
+GO 
+
+
+
+ALTER DATABASE [AdventureWorks2016] SET EMERGENCY; -- Set to EMERGENCY mode
+GO
+-- If is taking longer than how it suppose too
+-- Execute 
+-- Sp_WhoiIsActive or Sp_Who2 ( To check there is LOCK,BLOCKING) 
+
+ALTER DATABASE [AdventureWorks2016] set single_user -- Set to SINGLE USER mode so dat nobody else w be able to connect to th db that is why
+GO
+
+DBCC CHECKDB ([AdventureWorks2016], REPAIR_ALLOW_DATA_LOSS) WITH ALL_ERRORMSGS; -- Am Ok if there is data loss with intent to repair
+GO
+-- Set it to SINGLE USER mode
+-- Once is completed 
+-- CHECKDB found 0 allocation errors and 0 consistency errors in database 'AdventureWorks2016'.
+-- DBCC execution completed. If DBCC printed error messages, contact your system administrator
+
+ALTER DATABASE [AdventureWorks2016] set multi_user -- Set back to Multi User
+GO 
+
+-- Repair Done
+-- NOTE! If happened that above step 1 to 4 does not fix the issue
+-- Go to last backup and restore back from the backup
+-- The Data from the last Backup is LOST nothing you can do
+
+
+-- MOVE DATABASE FILES FROM ONE LOCATION TO ANOTHER 
+---------------------------------------------------------------------------------------------------------------------------
+-- When ever you see Data Files and Log Files in C: Drive its bad practice 
+  -- Request for this Drive
+     -- D: Drive
+	 -- L: Log
+	 -- T: TempDB
+	 -- B: Backup
+
+-- Temporary Storage (D:) => DATALOSS_WARNING_README => Any time you restart server all the data on the drive will loss in case you are on Azure
+-- WARNING: THIS IS A TEMPORARY DISK:
+-- Any data stored on this drive is SUBJECT TO LOSS and THERE IS NO WAY TO RECOVER IT.
+-- Please do not use this disk for storing any personal or application data.
+-- For additional details please refer to the documentation at: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/managed-disks-overview#temporary-disk
+
+-- https://www.mssqltips.com/sqlservertip/6689/sql-server-move-database-files/
+-- https://m-files.my.site.com/s/article/How-to-move-SQL-Server-datafiles-to-another-hard-drive
+
+-- 1. Check the current location of the Database File - Script below will show you where the file location is
+SELECT name AS FileLogicalName, physical_name AS FileLocation
+FROM sys.master_files 
+WHERE database_id = DB_ID(N'TestDB') -- Change the Database to the one you like to move 
+
+-- Copy the output because you need later in step 3
+
+-- TestDB      C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB.mdf
+-- TestDB_Log  C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB_log.ldf
+
+-- 2. Set Database offline
+USE master
+GO
+
+ALTER DATABASE TestDB SET OFFLINE
+
+-- 3. Move Database file to the new location
+-- TestDB      C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB.mdf
+-- TestDB_Log  C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB_log.ldf
+USE master
+GO
+
+ALTER DATABASE TestDB -- change the database to the one you are working on 
+MODIFY FILE (NAME = TestDB, FILENAME = 'E:\MSSQL\TestDB.mdf') -- New location
+
+ALTER DATABASE TestDB 
+MODIFY FILE (NAME = TestDB_log, FILENAME = 'F:\MSSQL\TestDB_log.ldf') -- New location
+
+-- Execute the above script
+
+-- 4. Cut the file from the old location and dump it to the new location(The right location)
+
+-- TestDB      C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB.mdf -------- E:\MSSQL
+-- TestDB_Log  C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\DATA\TestDB_log.ldf ---- F:\MSSQL
+
+-- 5. Turn the Database back online
+
+USE master
+GO
+
+ALTER DATABASE TestDB SET ONLINE
+
+-- Likely error => Unable to open the physical file "D:........
+-- SOLUTION => Go to - Configuration Manager - What Service Account running? - NT Service\MSSQLSERVER(it happened if bcos you did not specify Service Account and SQL Server w use this by default) - Right on the Service Account Name(NT Service\MSSQLSERVER) - Click - Properties - Copy the - Account Name(NT Service\MSSQLSERVER) - Go to File Explorer - This PC - The DRIVE(DataFile(D:) (SQL Server does not recognize the drive that is why it saying access denied) - So on the DRIVE - Right click - Properties - Security - Edit - Add - Paste (TekyPro) - Location - Click on the Server Name (NOT ENTIRE DIRECTORY) - Ok - Check Names - the name it appear there - Ok - Check - Allow full control - Apply - Continue
+
+-- Go to the AGENT on Configuration Manager - Right Click - Properties - Just do same process as above
+
+-- EXECUTE the query again 
+USE master
+GO
+
+ALTER DATABASE TestDB SET ONLINE
+
+-- Done
+
+-- HOW TO SHRINK TRANSACTION LOG FILE 
+----------------------------------------------------------------------------------------------------------------------
+-- Inside Database which consist of mdf which storing actual data and is bigger than ldf which is for temporary data, everything will do will surely store in ldf which flush into data file mdf and the process of FLUSHING DATA  from log file to data file is called CHECK POINT
+-- CHECK POINT=> is a process that writes all the modified data pages from memory (buffer cache) to disk
+
+-- When you do T.Log backup it will flush everything in LDF to data page now but if T.LOG backup is not running the ldf will continue to grow grow and grow once it, once it grow to the maximum size of the disk then it begin to give database issues, the Application that is connecting to the database will now start to have issue, start time out bcos T.log is full 
+
+
+-- COMMAND TO CHECK TRANSACTION LOG USAGE 
+-- DBCC SQLperf (LOGspace)
+DBCC SQLperf (LOGspace)
+
+-- Any one is 80% is not good you should be worried
+
+-- WHEN YOU HAVE A SITUATION WHERE YOU T.LOG IS GROWING YOU CAN SHRINK YOUR T.LOG
+-- Right click on the Database(AdventureWorks2016) - Task - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- CMS - Setup Linked Server - Import And Export Table - SQL Jobs - Setup Extended Event Trace -AlwaysOn Review - Basic PowerShell Command - Interview Preparation
